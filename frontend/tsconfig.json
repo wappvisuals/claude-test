@@ -17,8 +17,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["resources/js/*"]
+      "@/*": ["src/*"]
     }
   },
-  "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }
