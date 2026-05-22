@@ -74,6 +74,8 @@ All endpoints follow standard Laravel paginator envelope shapes:
 
 Pre-existing tables (e.g. `customer_profile`) exist in `gracewel_grace` and are not managed by Laravel migrations. They are accessed via Eloquent models with explicit `$table` and `$primaryKey` properties. No migration files are created for these tables.
 
+**Full schema reference:** `.claude/database.md` — read this before planning or implementing any feature that touches the database.
+
 ---
 
 ## Conventions

@@ -43,11 +43,45 @@ class CustomerController extends Controller
     public function show(int $id): CustomerResource
     {
         $customer = Customer::query()
+            ->with('organization')
             ->selectRaw('customer_profile.*, NULL as last_order, NULL as relevance_score, NULL as matched_fields_raw')
             ->where('to_user', $id)
             ->firstOrFail();
 
         return new CustomerResource($customer);
+    }
+
+    public function update(Request $request, int $id): CustomerResource
+    {
+        $customer = Customer::where('to_user', $id)->firstOrFail();
+
+        $validated = $request->validate([
+            'first_name'        => 'nullable|string|max:64',
+            'last_name'         => 'nullable|string|max:64',
+            'email'             => 'nullable|email|max:64',
+            'alternative_email' => 'nullable|email|max:64',
+            'tel'               => 'nullable|string|max:20',
+            'alternative_tel'   => 'nullable|string|max:20',
+            'careof'            => 'nullable|string|max:100',
+            'adress'            => 'nullable|string|max:256',
+            'post_nr'           => 'nullable|string|max:11',
+            'ort'               => 'nullable|string|max:64',
+            'region_code'       => 'nullable|in:SE,FI,NO,EE,LV,LT,PL',
+            'sex'               => 'nullable|in:male,female,unknown',
+            'pers_nr'           => 'nullable|string|max:40',
+            'comments'          => 'nullable|string',
+            'reminders'         => 'nullable|boolean',
+        ]);
+
+        $customer->update($validated);
+
+        return new CustomerResource(
+            Customer::query()
+                ->with('organization')
+                ->selectRaw('customer_profile.*, NULL as last_order, NULL as relevance_score, NULL as matched_fields_raw')
+                ->where('to_user', $id)
+                ->firstOrFail()
+        );
     }
 
     public function search(Request $request, CustomerSearchService $service): AnonymousResourceCollection
