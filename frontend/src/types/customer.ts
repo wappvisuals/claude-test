@@ -42,12 +42,13 @@ export interface Customer {
 
   // Organisation
   organization_id: number | null
+  organization_name: string | null
 
   // JSON fields (detail page)
-  comments: string | null
+  comments: string | null   // plain text stored in DB
   ledgers: unknown[] | null
   blocked_fees: unknown[] | null
-  reminders: unknown | null
+  reminders: boolean | null
   gothia_account: unknown | null
 
   // Misc
@@ -96,4 +97,22 @@ export interface CustomerSearchParams {
   last_order_before?: string
   page?: number
   per_page?: number
+}
+
+export interface CustomerUpdatePayload {
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+  alternative_email?: string | null
+  tel?: string | null
+  alternative_tel?: string | null
+  careof?: string | null
+  adress?: string | null
+  post_nr?: string | null
+  ort?: string | null
+  region_code?: string | null
+  sex?: string | null
+  pers_nr?: string | null
+  comments?: string | null
+  reminders?: boolean | null
 }

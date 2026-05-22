@@ -105,7 +105,7 @@ export function CustomerListPage() {
       : `${TABS.find((t) => t.key === activeTab)?.label} customers`
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5 p-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Customers</h1>
         <div className="flex items-center gap-1">

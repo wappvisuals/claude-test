@@ -43,6 +43,7 @@ class CustomerResource extends JsonResource
             'updated_at'         => $this->updated_at,
             'last_order'         => $this->last_order ?? null,
             'organization_id'    => $this->organization_id,
+            'organization_name'  => $this->organization?->name,
             'comments'           => $this->comments,
             'ledgers'            => $this->ledgers,
             'blocked_fees'       => $this->blocked_fees,

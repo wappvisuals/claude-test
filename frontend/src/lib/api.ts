@@ -3,8 +3,10 @@ import type {
   Customer,
   CustomerListParams,
   CustomerSearchParams,
+  CustomerUpdatePayload,
   PaginatedResponse,
 } from '@/types/customer'
+import type { Organization } from '@/types/organization'
 
 const http = axios.create({
   baseURL: '/api',
@@ -62,6 +64,30 @@ export async function searchCustomers(
 // The show endpoint returns { data: Customer } (single-resource envelope)
 export async function fetchCustomer(id: number): Promise<Customer> {
   const response = await http.get<{ data: Customer }>(`/customers/${id}`)
+  return response.data.data
+}
+
+// ─── Customer Update ──────────────────────────────────────────────────────────
+
+export async function updateCustomer(id: number, payload: CustomerUpdatePayload): Promise<Customer> {
+  const response = await http.patch<{ data: Customer }>(`/customers/${id}`, payload)
+  return response.data.data
+}
+
+// ─── Organizations ────────────────────────────────────────────────────────────
+
+export async function searchOrganizations(q: string, perPage = 15): Promise<PaginatedResponse<Organization>> {
+  const response = await http.get<PaginatedResponse<Organization>>('/organizations', {
+    params: buildParams({ q, per_page: perPage }),
+  })
+  return response.data
+}
+
+export async function upsertOrganization(
+  customerId: number,
+  payload: { organization_id: string; name?: string | null }
+): Promise<Customer> {
+  const response = await http.put<{ data: Customer }>(`/customers/${customerId}/organization`, payload)
   return response.data.data
 }
 
