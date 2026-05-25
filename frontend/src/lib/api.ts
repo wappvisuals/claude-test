@@ -8,8 +8,15 @@ import type {
 } from '@/types/customer'
 import type { Organization } from '@/types/organization'
 
+// In production there is no Vite dev-proxy, so we use the full external URL.
+// In development the proxy intercepts /api/* — VITE_BACKEND_URL is still read
+// by vite.config.ts so the proxy forwards to the right backend automatically.
+const BASE_URL = import.meta.env.VITE_BACKEND_URL
+  ? `${import.meta.env.VITE_BACKEND_URL}/api`
+  : '/api'
+
 const http = axios.create({
-  baseURL: '/api',
+  baseURL: BASE_URL,
   headers: {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
