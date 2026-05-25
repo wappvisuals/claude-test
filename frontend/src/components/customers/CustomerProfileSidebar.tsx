@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Mail, Phone, MapPin, User, Calendar, CreditCard, Truck, Users,
-  Copy, CheckCircle2, Circle, ChevronLeft, Pencil, Building2,
+  Copy, Check, CheckCircle2, Circle, ChevronLeft, Pencil, Building2,
 } from 'lucide-react'
 import type { Customer } from '@/types/customer'
 
@@ -48,12 +49,15 @@ interface Props {
 
 export function CustomerProfileSidebar({ customer, onEdit }: Props) {
   const navigate = useNavigate()
+  const [addressCopied, setAddressCopied] = useState(false)
   const ledgers = Array.isArray(customer.ledgers) ? (customer.ledgers as Record<string, unknown>[]) : []
   const hasAddress = customer.adress || customer.post_nr || customer.ort
 
   function copyAddress() {
     const addr = [customer.adress, customer.post_nr, customer.ort].filter(Boolean).join(', ')
     navigator.clipboard.writeText(addr)
+    setAddressCopied(true)
+    setTimeout(() => setAddressCopied(false), 2000)
   }
 
   return (
@@ -197,10 +201,12 @@ export function CustomerProfileSidebar({ customer, onEdit }: Props) {
             </div>
             <button
               onClick={copyAddress}
-              className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-400 flex-shrink-0"
-              title="Copy address"
+              className={`w-6 h-6 flex items-center justify-center rounded transition-colors flex-shrink-0 ${
+                addressCopied ? 'text-[#00C48C]' : 'text-gray-400 hover:bg-gray-100'
+              }`}
+              title={addressCopied ? 'Copied!' : 'Copy address'}
             >
-              <Copy size={12} />
+              {addressCopied ? <Check size={12} /> : <Copy size={12} />}
             </button>
           </div>
 

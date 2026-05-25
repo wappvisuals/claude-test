@@ -89,10 +89,10 @@ export function CustomerOrganizationForm({
 
       {/* Org ID + Search */}
       <div>
-        <label className="block text-[12px] font-medium text-[#1A1A2E] mb-1.5">
+        <label className="block text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">
           Organization ID
         </label>
-        <div className="flex gap-2">
+        <div className="relative">
           <input
             type="text"
             value={orgId}
@@ -100,23 +100,23 @@ export function CustomerOrganizationForm({
             maxLength={10}
             placeholder="e.g. 5569910127"
             disabled={saving}
-            className="flex-1 text-[13px] border border-[#EBEBF5] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#00C48C]/20 focus:border-[#00C48C] placeholder:text-gray-400 disabled:opacity-50"
+            className="w-full text-[13px] border border-[#EBEBF5] rounded-lg pl-3 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-[#00C48C]/20 focus:border-[#00C48C] placeholder:text-gray-400 disabled:opacity-50"
           />
           <button
             type="button"
             onClick={handleSearch}
             disabled={saving || searching}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#00C48C] text-white text-[12px] font-semibold rounded-lg hover:bg-[#00A876] transition-colors disabled:opacity-50"
+            title={searching ? 'Searching…' : 'Search'}
+            className="absolute right-0 top-0 bottom-0 w-10 flex items-center justify-center bg-[#00C48C] text-white rounded-r-lg hover:bg-[#00A876] transition-colors disabled:opacity-50"
           >
-            <Search size={13} />
-            {searching ? 'Searching…' : 'Search'}
+            <Search size={14} />
           </button>
         </div>
         {orgIdError && <p className="text-[11px] text-red-500 mt-1">{orgIdError}</p>}
         {searchError && <p className="text-[11px] text-red-500 mt-1">{searchError}</p>}
         {searched && !searchError && (
-          <p className={`text-[11px] mt-1 ${foundOrg ? 'text-[#00C48C]' : 'text-orange-500'}`}>
-            {foundOrg ? `Found: ${foundOrg.name}` : 'Organization not found — will be created.'}
+          <p className={`text-[11px] mt-1.5 ${foundOrg ? 'text-[#00C48C]' : 'text-orange-500'}`}>
+            {foundOrg ? `✓ Found: ${foundOrg.name}` : 'Organization not found — will be created.'}
           </p>
         )}
       </div>
@@ -141,11 +141,11 @@ export function CustomerOrganizationForm({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 pt-1">
         <button
           type="submit"
           disabled={saving || !searched}
-          className="px-4 py-1.5 bg-[#00C48C] text-white text-[12px] font-semibold rounded-lg hover:bg-[#00A876] transition-colors disabled:opacity-50"
+          className="px-5 py-1.5 bg-[#00C48C] text-white text-[12px] font-semibold rounded-lg hover:bg-[#00A876] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
@@ -153,7 +153,7 @@ export function CustomerOrganizationForm({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="px-4 py-1.5 text-[12px] text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 text-[12px] text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>

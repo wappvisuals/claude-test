@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Mail, Phone, MapPin, User, Calendar, CreditCard, Truck, Users,
-  Copy, Pencil, Building2, ChevronDown, ChevronUp,
+  Copy, Check, Pencil, Building2, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { useOrganizationUpsert } from '@/hooks/useOrganizationUpsert'
 import { CustomerOrganizationForm } from './CustomerOrganizationForm'
@@ -116,50 +116,54 @@ function OrgCard({ customer, onOrgSave }: { customer: Customer; onOrgSave: (upda
 
   return (
     <div className="border border-[#EBEBF5] rounded-xl px-4 py-3">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] text-gray-400">Organization</p>
-        {!editing && (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1 text-[11px] font-medium text-[#00C48C] hover:text-[#00A876] transition-colors"
-          >
-            <Pencil size={11} />
-            {customer.organization_id ? 'Edit' : 'Link'}
-          </button>
-        )}
-      </div>
-
-      {!editing && (
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            <Building2 size={14} className="text-indigo-400" />
+      {editing ? (
+        /* ── Edit mode: no "Organization" label stacked above form ── */
+        <>
+          <p className="text-[11px] text-gray-400 mb-3">
+            {customer.organization_id ? 'Change Organization' : 'Link Organization'}
+          </p>
+          <CustomerOrganizationForm
+            customerId={customer.id}
+            initialOrgId={customer.organization_id?.toString() ?? ''}
+            saving={saving}
+            error={error}
+            fieldErrors={fieldErrors}
+            onSuccess={onOrgSave}
+            onCancel={() => setEditing(false)}
+            onSubmit={handleSubmit}
+          />
+        </>
+      ) : (
+        /* ── View mode ── */
+        <>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] text-gray-400">Organization</p>
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1 text-[11px] font-medium text-[#00C48C] hover:text-[#00A876] transition-colors"
+            >
+              <Pencil size={11} />
+              {customer.organization_id ? 'Edit' : 'Link'}
+            </button>
           </div>
-          <div className="min-w-0">
-            {customer.organization_id ? (
-              <>
-                <p className="text-[13px] font-semibold text-[#1A1A2E] leading-tight truncate">{customer.organization_id}</p>
-                {customer.organization_name && (
-                  <p className="text-[12px] text-gray-500 mt-0.5 truncate">{customer.organization_name}</p>
-                )}
-              </>
-            ) : (
-              <p className="text-[13px] text-gray-400 italic">— none —</p>
-            )}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+              <Building2 size={14} className="text-indigo-400" />
+            </div>
+            <div className="min-w-0">
+              {customer.organization_id ? (
+                <>
+                  <p className="text-[13px] font-semibold text-[#1A1A2E] leading-tight truncate">{customer.organization_id}</p>
+                  {customer.organization_name && (
+                    <p className="text-[12px] text-gray-500 mt-0.5 truncate">{customer.organization_name}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-[13px] text-gray-400 italic">— none —</p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-
-      {editing && (
-        <CustomerOrganizationForm
-          customerId={customer.id}
-          initialOrgId={customer.organization_id?.toString() ?? ''}
-          saving={saving}
-          error={error}
-          fieldErrors={fieldErrors}
-          onSuccess={onOrgSave}
-          onCancel={() => setEditing(false)}
-          onSubmit={handleSubmit}
-        />
+        </>
       )}
     </div>
   )
@@ -169,7 +173,14 @@ function OrgCard({ customer, onOrgSave }: { customer: Customer; onOrgSave: (upda
 
 export function CustomerProfileHeader({ customer, onOrgSave, onEdit }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [addressCopied, setAddressCopied] = useState(false)
   const addressLine = [customer.adress, customer.post_nr, customer.ort].filter(Boolean).join(', ')
+
+  function copyAddress() {
+    navigator.clipboard.writeText(addressLine)
+    setAddressCopied(true)
+    setTimeout(() => setAddressCopied(false), 2000)
+  }
 
   return (
     <div className="bg-white border border-[#EBEBF5] rounded-xl px-6 py-5">
@@ -245,11 +256,13 @@ export function CustomerProfileHeader({ customer, onOrgSave, onEdit }: Props) {
                   {[customer.post_nr, customer.ort].filter(Boolean).join(' ')}
                 </p>
                 <button
-                  onClick={() => navigator.clipboard.writeText(addressLine)}
-                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-400 flex-shrink-0 mt-0.5"
-                  title="Copy address"
+                  onClick={copyAddress}
+                  className={`w-5 h-5 flex items-center justify-center rounded transition-colors flex-shrink-0 mt-0.5 ${
+                    addressCopied ? 'text-[#00C48C]' : 'text-gray-400 hover:bg-gray-100'
+                  }`}
+                  title={addressCopied ? 'Copied!' : 'Copy address'}
                 >
-                  <Copy size={11} />
+                  {addressCopied ? <Check size={11} /> : <Copy size={11} />}
                 </button>
               </div>
             ) : (
