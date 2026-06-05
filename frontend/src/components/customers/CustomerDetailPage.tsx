@@ -9,6 +9,9 @@ import { CustomerProfileStats } from './CustomerProfileStats'
 import { CustomerProfileCenter } from './CustomerProfileCenter'
 import { CustomerEditForm } from './CustomerEditForm'
 import { CustomerRemindersCard } from './CustomerRemindersCard'
+import { CustomerChangeLogDrawer } from './CustomerChangeLogDrawer'
+import { InsurancePoliciesCard } from '@/components/insurance/InsurancePoliciesCard'
+import { SinfridAccountCard } from '@/components/sinfrid/SinfridAccountCard'
 import type { Customer, CustomerUpdatePayload } from '@/types/customer'
 
 export function CustomerDetailPage() {
@@ -36,6 +39,13 @@ export function CustomerDetailPage() {
   async function handleSaveNotes(payload: CustomerUpdatePayload) {
     const updated = await update(Number(id), payload)
     if (updated) setLocalCustomer(updated)
+  }
+
+  function handleBlockChange(blocked: boolean) {
+    setLocalCustomer((prev) => {
+      const base = prev ?? fetchedCustomer
+      return base ? { ...base, is_ssn_blocked: blocked } : prev
+    })
   }
 
   if (loading) return <CustomerDetailSkeleton />
@@ -77,6 +87,7 @@ export function CustomerDetailPage() {
           customer={customer}
           onOrgSave={(updated) => setLocalCustomer(updated)}
           onEdit={() => setIsEditing(true)}
+          onBlockChange={handleBlockChange}
         />
         <CustomerProfileStats customer={customer} />
         <CustomerProfileCenter
@@ -84,7 +95,10 @@ export function CustomerDetailPage() {
           onSave={handleSaveNotes}
           saving={saving}
         />
+        <SinfridAccountCard customerId={Number(id)} />
+        <InsurancePoliciesCard customerId={Number(id)} />
       </div>
+      <CustomerChangeLogDrawer customerId={Number(id)} />
     </div>
   )
 }

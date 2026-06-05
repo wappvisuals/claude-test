@@ -51,6 +51,7 @@ class CustomerResource extends JsonResource
             'gothia_account'     => $this->gothia_account,
             'credit_check'       => $this->credit_check,
             'sync'               => $this->sync,
+            'is_ssn_blocked'     => $this->is_ssn_blocked ?? null,
             'relevance_score'    => isset($this->relevance_score) ? (int) $this->relevance_score : null,
             'matched_fields'     => $matchedFields,
         ];

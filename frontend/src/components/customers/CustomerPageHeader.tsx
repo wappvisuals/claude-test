@@ -24,11 +24,6 @@ export function CustomerPageHeader({ customer: _customer, onEdit: _onEdit }: Pro
           Customer details
         </span>
       </div>
-
-      {/* Right: avatar */}
-      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-xs font-semibold">
-        A
-      </div>
     </div>
   )
 }

@@ -5,12 +5,14 @@ import {
 } from 'lucide-react'
 import { useOrganizationUpsert } from '@/hooks/useOrganizationUpsert'
 import { CustomerOrganizationForm } from './CustomerOrganizationForm'
+import { CustomerSsnBlockControl } from './CustomerSsnBlockControl'
 import type { Customer } from '@/types/customer'
 
 interface Props {
   customer: Customer
   onOrgSave: (updated: Customer) => void
   onEdit: () => void
+  onBlockChange: (blocked: boolean) => void
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -171,7 +173,7 @@ function OrgCard({ customer, onOrgSave }: { customer: Customer; onOrgSave: (upda
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function CustomerProfileHeader({ customer, onOrgSave, onEdit }: Props) {
+export function CustomerProfileHeader({ customer, onOrgSave, onEdit, onBlockChange }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [addressCopied, setAddressCopied] = useState(false)
   const addressLine = [customer.adress, customer.post_nr, customer.ort].filter(Boolean).join(', ')
@@ -190,9 +192,16 @@ export function CustomerProfileHeader({ customer, onOrgSave, onEdit }: Props) {
         <div>
           <h1 className="text-[22px] font-bold text-[#1A1A2E] leading-tight">{customer.full_name}</h1>
           {customer.pers_nr && (
-            <span className="inline-block mt-1.5 text-[11px] text-gray-500 bg-gray-100 rounded px-2 py-0.5 font-mono tracking-wide">
-              {customer.pers_nr}
-            </span>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] text-gray-500 bg-gray-100 rounded px-2 py-0.5 font-mono tracking-wide">
+                {customer.pers_nr}
+              </span>
+              <CustomerSsnBlockControl
+                ssn={customer.pers_nr}
+                blocked={!!customer.is_ssn_blocked}
+                onChange={onBlockChange}
+              />
+            </div>
           )}
         </div>
         <button

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CustomerResource;
+use App\Models\BlockedSsn;
 use App\Models\Customer;
 use App\Services\CustomerSearchService;
 use Illuminate\Http\Request;
@@ -48,6 +49,8 @@ class CustomerController extends Controller
             ->where('to_user', $id)
             ->firstOrFail();
 
+        $customer->is_ssn_blocked = BlockedSsn::isBlocked($customer->pers_nr);
+
         return new CustomerResource($customer);
     }
 
@@ -73,15 +76,20 @@ class CustomerController extends Controller
             'reminders'         => 'nullable|boolean',
         ]);
 
+        // Snapshot pre-update values so the audit log records accurate old → new.
+        $original = $customer->getAttributes();
         $customer->update($validated);
+        $customer->logChanges('edit', $original);
 
-        return new CustomerResource(
-            Customer::query()
-                ->with('organization')
-                ->selectRaw('customer_profile.*, NULL as last_order, NULL as relevance_score, NULL as matched_fields_raw')
-                ->where('to_user', $id)
-                ->firstOrFail()
-        );
+        $fresh = Customer::query()
+            ->with('organization')
+            ->selectRaw('customer_profile.*, NULL as last_order, NULL as relevance_score, NULL as matched_fields_raw')
+            ->where('to_user', $id)
+            ->firstOrFail();
+
+        $fresh->is_ssn_blocked = BlockedSsn::isBlocked($fresh->pers_nr);
+
+        return new CustomerResource($fresh);
     }
 
     public function search(Request $request, CustomerSearchService $service): AnonymousResourceCollection

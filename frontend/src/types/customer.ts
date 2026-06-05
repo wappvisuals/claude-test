@@ -55,6 +55,9 @@ export interface Customer {
   credit_check: string | null
   sync: string | null
 
+  // Whether this customer's SSN (pers_nr) is on the blocklist
+  is_ssn_blocked: boolean | null
+
   // Search-only — null on list endpoint
   relevance_score: number | null
   matched_fields: MatchedField[] | null

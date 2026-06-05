@@ -1,11 +1,55 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\BlockedSsnController;
+use App\Http\Controllers\Api\CustomerChangeController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerOrganizationController;
+use App\Http\Controllers\Api\GdprCustomerController;
+use App\Http\Controllers\Api\InsurancePolicyController;
 use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\SinfridAccountController;
 
 Route::get('/customers/search', [CustomerController::class, 'search']);
+
+// GDPR management
+Route::get('/gdpr/customers', [GdprCustomerController::class, 'index']);
+Route::get('/gdpr/exclusion-types', [GdprCustomerController::class, 'exclusionTypes']);
+Route::post('/gdpr/bulk-action', [GdprCustomerController::class, 'bulkAction']);
+
+// Blocked SSN
+Route::get('/blocked-ssn', [BlockedSsnController::class, 'index']);
+Route::post('/blocked-ssn', [BlockedSsnController::class, 'store']);
+Route::delete('/blocked-ssn/by-ssn/{ssn}', [BlockedSsnController::class, 'destroyBySsn'])->where('ssn', '.*');
+Route::delete('/blocked-ssn/{id}', [BlockedSsnController::class, 'destroy'])->where('id', '[0-9]+');
+
+// Insurance policies
+Route::post('/policies/{id}/cancel', [InsurancePolicyController::class, 'cancel']);
+Route::post('/policies/{id}/sync-status', [InsurancePolicyController::class, 'syncStatus']);
+Route::delete('/policies/{id}', [InsurancePolicyController::class, 'destroy']);
+
+// Sinfrid account (account-scoped)
+Route::get('/sinfrid-account/plans', [SinfridAccountController::class, 'plans']);
+Route::post('/sinfrid-account/{id}/family-members', [SinfridAccountController::class, 'addFamilyMember']);
+Route::patch('/sinfrid-account/{id}/family-members/{memberId}', [SinfridAccountController::class, 'updateFamilyMember']);
+Route::delete('/sinfrid-account/{id}/family-members/{memberId}', [SinfridAccountController::class, 'removeFamilyMember']);
+Route::post('/sinfrid-account/{id}/change-plan/{planId}', [SinfridAccountController::class, 'changePlan'])->where('planId', '[0-9]+');
+Route::patch('/sinfrid-account/{id}/{action}', [SinfridAccountController::class, 'updateStatus'])->where('action', 'activate|deactivate');
+Route::patch('/sinfrid-account/{id}', [SinfridAccountController::class, 'update']);
+Route::delete('/sinfrid-account/{id}', [SinfridAccountController::class, 'destroy']);
+
+// Customer-scoped
+Route::get('/customers/{id}/changes', [CustomerChangeController::class, 'index'])->where('id', '[0-9]+');
+Route::get('/customers/{id}/policies', [InsurancePolicyController::class, 'index'])->where('id', '[0-9]+');
+Route::get('/customers/{id}/sinfrid-account', [SinfridAccountController::class, 'show'])->where('id', '[0-9]+');
+Route::get('/customers/{id}/sinfrid-account/alarms', [SinfridAccountController::class, 'alarms'])->where('id', '[0-9]+');
+Route::get('/customers/{id}/sinfrid-account/activities', [SinfridAccountController::class, 'activities'])->where('id', '[0-9]+');
+Route::put('/customers/{id}/gdpr/flag', [GdprCustomerController::class, 'flag'])->where('id', '[0-9]+');
+Route::delete('/customers/{id}/gdpr/flag', [GdprCustomerController::class, 'unflag'])->where('id', '[0-9]+');
+Route::put('/customers/{id}/gdpr/status', [GdprCustomerController::class, 'updateStatus'])->where('id', '[0-9]+');
+Route::post('/customers/{id}/gdpr/anonymize', [GdprCustomerController::class, 'anonymize'])->where('id', '[0-9]+');
+Route::post('/customers/{id}/gdpr/deanonymize', [GdprCustomerController::class, 'deanonymize'])->where('id', '[0-9]+');
+
 Route::get('/customers/{id}', [CustomerController::class, 'show'])->where('id', '[0-9]+');
 Route::patch('/customers/{id}', [CustomerController::class, 'update'])->where('id', '[0-9]+');
 Route::get('/customers', [CustomerController::class, 'index']);

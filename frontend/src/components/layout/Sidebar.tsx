@@ -1,5 +1,5 @@
 import { Users } from 'lucide-react'
-import { NavItem } from './NavItem'
+import { NavGroup } from './NavGroup'
 
 export function Sidebar() {
   return (
@@ -11,8 +11,16 @@ export function Sidebar() {
         <span className="text-sm font-semibold text-white">Gracewel</span>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <NavItem to="/customers" label="Customers" icon={<Users size={16} />} />
+      <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-1">
+        <NavGroup
+          label="Customers"
+          icon={<Users size={16} />}
+          children={[
+            { to: '/customers', label: 'All Customers', exact: true },
+            { to: '/gdpr', label: 'GDPR' },
+            { to: '/blocked-ssn', label: 'Blocked SSNs' },
+          ]}
+        />
       </nav>
     </aside>
   )
