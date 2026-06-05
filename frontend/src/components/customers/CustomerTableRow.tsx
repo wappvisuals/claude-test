@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { HighlightText } from './HighlightText'
+import { ListRow, ListCell } from '@/components/ui/ListView'
 import type { Customer } from '@/types/customer'
 
 interface CustomerTableRowProps {
@@ -15,43 +16,30 @@ function formatAddress(c: Customer): string | null {
 
 export function CustomerTableRow({ customer, searchTokens }: CustomerTableRowProps) {
   const navigate = useNavigate()
+  const address = formatAddress(customer)
 
   return (
-    <div
-      className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
-      onClick={() => navigate(`/customers/${customer.id}`)}
-    >
-      <span className="w-12 flex-shrink-0 text-sm text-gray-400 tabular-nums">
-        {customer.id}
-      </span>
-
-      <span className="w-36 flex-shrink-0 text-sm font-medium text-gray-900 truncate">
+    <ListRow onClick={() => navigate(`/customers/${customer.id}`)}>
+      <ListCell className="text-gray-400 tabular-nums">{customer.id}</ListCell>
+      <ListCell className="font-medium text-[#1A1A2E]">
         <HighlightText text={customer.full_name} tokens={searchTokens} />
-      </span>
-
-      <span className="w-28 flex-shrink-0 font-mono text-xs text-gray-400 truncate">
+      </ListCell>
+      <ListCell className="font-mono text-xs text-gray-400">
         {customer.pers_nr ? <HighlightText text={customer.pers_nr} tokens={searchTokens} /> : '—'}
-      </span>
-
-      <span className="flex-1 min-w-0 text-sm text-gray-500 truncate">
-        {formatAddress(customer)
-          ? <HighlightText text={formatAddress(customer)} tokens={searchTokens} />
-          : '—'}
-      </span>
-
-      <span className="w-32 flex-shrink-0 text-sm text-gray-500 truncate">
+      </ListCell>
+      <ListCell className="max-w-[260px] truncate text-gray-500">
+        {address ? <HighlightText text={address} tokens={searchTokens} /> : '—'}
+      </ListCell>
+      <ListCell className="text-gray-500">
         {customer.tel ? <HighlightText text={customer.tel} tokens={searchTokens} /> : '—'}
-      </span>
-
-      <span className="w-40 flex-shrink-0 text-sm text-gray-500 truncate">
+      </ListCell>
+      <ListCell className="max-w-[200px] truncate text-gray-500">
         {customer.email ? <HighlightText text={customer.email} tokens={searchTokens} /> : '—'}
-      </span>
-
-      <span className="w-24 flex-shrink-0 text-right text-xs text-gray-400">
-        {customer.last_order ?? '—'}
-      </span>
-
-      <ChevronRight size={15} className="flex-shrink-0 text-gray-300" />
-    </div>
+      </ListCell>
+      <ListCell className="text-right text-xs text-gray-400">{customer.last_order ?? '—'}</ListCell>
+      <ListCell className="text-right">
+        <ChevronRight size={15} className="inline text-gray-300" />
+      </ListCell>
+    </ListRow>
   )
 }

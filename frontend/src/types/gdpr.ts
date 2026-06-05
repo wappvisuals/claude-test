@@ -33,6 +33,7 @@ export interface GdprCustomer {
 export type GdprBulkAction = 'flag' | 'unflag' | 'anonymize' | 'reject' | 'restore'
 
 export interface GdprListParams {
+  q?: string
   status?: GdprStatus[]
   page?: number
   per_page?: number

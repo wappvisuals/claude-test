@@ -355,6 +355,20 @@ email-resend as optional since it needs SendGrid.)
     redundant avatar was removed from `CustomerPageHeader`.
   - Change Log = floating-button drawer on the profile; Insurance, Sinfrid are
     tabs/cards on the customer detail page.
+- **Listing-page UI convention (REQUIRED for all list pages):** every listing
+  page (Customers, GDPR, Blocked SSNs, and any future list) uses the shared
+  `components/ui/ListView.tsx` primitives so they match the in-profile
+  subscription/order list style (`CustomerProfileCenter`). The pattern:
+  - `ListView` card (`bg-white border border-[#EBEBF5] rounded-xl`)
+  - `ListViewHeader` — section title + icon + count chip (+ optional right actions)
+  - `ListViewToolbar` — `#FAFBFF` filter strip holding the `SearchBar` and any
+    filters; **status filters are dropdowns (`Select`), not tabs**
+  - `ListTable` / `ListThead` / `ListTh` / `ListRow` / `ListCell` / `ListEmpty`
+    — real `<table>` with uppercase gray heads and `#F0F1F7` row borders
+  - `ListFooter` — pagination (range + prev/next)
+  - Accent color is teal **#00C48C** (hover `#00A876`); `SearchBar` and
+    `CustomerSearch` use it. Do NOT introduce new bespoke table markup for a
+    list page — compose these primitives.
 - **Enums dir**: create `app/Enums/` (new); register no special autoload (PSR-4
   already covers `App\`).
 - **Crypt**: use Laravel `Crypt`/`encrypt()` for GDPR backup (legacy used a

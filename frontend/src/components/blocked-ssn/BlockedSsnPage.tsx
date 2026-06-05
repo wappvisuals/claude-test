@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Plus, Search, Trash2, ShieldBan, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, ShieldBan } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { SearchBar } from '@/components/ui/SearchBar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import {
+  ListView, ListViewHeader, ListViewToolbar, ListTable, ListThead, ListTh,
+  ListRow, ListCell, ListEmpty, ListFooter,
+} from '@/components/ui/ListView'
 import { useBlockedSsns } from '@/hooks/useBlockedSsns'
 import { useBlockedSsnActions } from '@/hooks/useBlockedSsnActions'
 import { BlockedSsnAddDialog } from './BlockedSsnAddDialog'
@@ -20,18 +22,16 @@ function formatDate(value: string | null): string {
 }
 
 export function BlockedSsnPage() {
-  const [rawQuery, setRawQuery] = useState('')
+  const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [addOpen, setAddOpen] = useState(false)
   const [toDelete, setToDelete] = useState<BlockedSsn | null>(null)
 
-  const query = useDebouncedValue(rawQuery, 300)
-
-  const { data, loading, error, refetch } = useBlockedSsns({ q: query, page, per_page: PER_PAGE })
+  const { data, loading, error, refetch } = useBlockedSsns({ q: query || undefined, page, per_page: PER_PAGE })
   const actions = useBlockedSsnActions()
 
-  function handleQueryChange(value: string) {
-    setRawQuery(value)
+  function handleSearch(q: string) {
+    setQuery(q.trim())
     setPage(1)
   }
 
@@ -51,65 +51,50 @@ export function BlockedSsnPage() {
 
   return (
     <div className="flex flex-col gap-5 p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-            <ShieldBan size={24} className="text-gray-700" />
-            Blocked SSNs
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            SSNs blocked from placing any orders.
-          </p>
-        </div>
-        <Button onClick={() => { actions.clearError(); setAddOpen(true) }}>
-          <Plus size={16} /> Block SSN
-        </Button>
-      </div>
-
-      <div className="relative max-w-sm">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <Input
-          value={rawQuery}
-          onChange={(e) => handleQueryChange(e.target.value)}
-          placeholder="Search SSN or reason…"
-          className="pl-9"
-        />
+      <div>
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+          <ShieldBan size={24} className="text-gray-700" />
+          Blocked SSNs
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">SSNs blocked from placing any orders.</p>
       </div>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-48">SSN</TableHead>
-              <TableHead>Reason</TableHead>
-              <TableHead className="w-36">Added by</TableHead>
-              <TableHead className="w-44">Date</TableHead>
-              <TableHead className="w-16 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <ListView>
+        <ListViewHeader title="Blocked SSNs" icon={<ShieldBan size={15} />} count={data?.meta.total}>
+          <Button size="sm" onClick={() => { actions.clearError(); setAddOpen(true) }}>
+            <Plus size={15} /> Block SSN
+          </Button>
+        </ListViewHeader>
+
+        <ListViewToolbar>
+          <SearchBar onSearch={handleSearch} placeholder="Search SSN or reason…" />
+        </ListViewToolbar>
+
+        <ListTable>
+          <ListThead>
+            <ListTh className="w-48">SSN</ListTh>
+            <ListTh>Reason</ListTh>
+            <ListTh className="w-36">Added by</ListTh>
+            <ListTh className="w-44">Date</ListTh>
+            <ListTh className="w-16 text-right">Action</ListTh>
+          </ListThead>
+          <tbody>
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell>
-                </TableRow>
+                <ListRow key={i}><ListCell colSpan={5}><Skeleton className="h-5 w-full" /></ListCell></ListRow>
               ))
             ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-16 text-center text-sm text-gray-400">
-                  No blocked SSNs found.
-                </TableCell>
-              </TableRow>
+              <ListEmpty colSpan={5} message="No blocked SSNs found." />
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="font-mono text-sm">{row.ssn}</TableCell>
-                  <TableCell className="text-gray-600">{row.reason || <span className="text-gray-300">—</span>}</TableCell>
-                  <TableCell className="text-gray-600">{row.added_by?.username || 'System'}</TableCell>
-                  <TableCell className="text-gray-500">{formatDate(row.created_at)}</TableCell>
-                  <TableCell className="text-right">
+                <ListRow key={row.id}>
+                  <ListCell className="font-mono">{row.ssn}</ListCell>
+                  <ListCell className="text-gray-600">{row.reason || <span className="text-gray-300">—</span>}</ListCell>
+                  <ListCell className="text-gray-600">{row.added_by?.username || 'System'}</ListCell>
+                  <ListCell className="text-gray-500">{formatDate(row.created_at)}</ListCell>
+                  <ListCell className="text-right">
                     <button
                       type="button"
                       onClick={() => { actions.clearError(); setToDelete(row) }}
@@ -118,40 +103,25 @@ export function BlockedSsnPage() {
                     >
                       <Trash2 size={16} />
                     </button>
-                  </TableCell>
-                </TableRow>
+                  </ListCell>
+                </ListRow>
               ))
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </ListTable>
 
-        {data && data.meta.last_page > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-100 px-6 py-3">
-            <p className="text-xs text-gray-400">
-              {data.meta.from ?? 0}–{data.meta.to ?? 0} of {data.meta.total}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={data.meta.current_page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-xs text-gray-500">
-                {data.meta.current_page} / {data.meta.last_page}
-              </span>
-              <button
-                disabled={data.meta.current_page >= data.meta.last_page}
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+        {data && (
+          <ListFooter
+            from={data.meta.from}
+            to={data.meta.to}
+            total={data.meta.total}
+            currentPage={data.meta.current_page}
+            lastPage={data.meta.last_page}
+            noun="blocked SSNs"
+            onPageChange={setPage}
+          />
         )}
-      </div>
+      </ListView>
 
       <BlockedSsnAddDialog
         open={addOpen}

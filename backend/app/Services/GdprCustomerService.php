@@ -34,6 +34,23 @@ class GdprCustomerService
             $query->whereIn('status', (array) $params['status']);
         }
 
+        if (!empty($params['q'])) {
+            $term = trim($params['q']);
+            $like = '%' . $term . '%';
+            $query->where(function ($w) use ($term, $like) {
+                // Match the linked customer's name…
+                $w->whereHas('customer', function ($c) use ($like) {
+                    $c->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", [$like])
+                        ->orWhere('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like);
+                });
+                // …or the customer id directly.
+                if (ctype_digit($term)) {
+                    $w->orWhere('customer_id', (int) $term);
+                }
+            });
+        }
+
         return $query->paginate($perPage);
     }
 

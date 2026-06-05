@@ -21,6 +21,7 @@ class GdprCustomerController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $validated = $request->validate([
+            'q' => 'nullable|string|max:200',
             'status' => 'array',
             'status.*' => ['string', 'in:' . implode(',', GdprStatus::all())],
             'page' => 'integer|min:1',

@@ -1,11 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SearchBar } from '@/components/ui/SearchBar'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import {
+  ListView, ListViewHeader, ListViewToolbar, ListTable, ListThead, ListTh,
+  ListRow, ListCell, ListEmpty, ListFooter,
+} from '@/components/ui/ListView'
 import { useGdprCustomers } from '@/hooks/useGdprCustomers'
 import { useGdprActions } from '@/hooks/useGdprActions'
 import { GdprStatusBadge } from './GdprStatusBadge'
@@ -16,7 +21,7 @@ import type { GdprBulkAction, GdprCustomer, GdprExclusionType, GdprStatus } from
 const PER_PAGE = 25
 
 const TABS: { key: 'all' | GdprStatus; label: string }[] = [
-  { key: 'all',            label: 'All' },
+  { key: 'all',            label: 'All statuses' },
   { key: 'flagged',        label: 'Flagged' },
   { key: 'pending_review', label: 'Pending Review' },
   { key: 'anonymized',     label: 'Anonymized' },
@@ -43,12 +48,13 @@ const BULK_LABELS: Record<GdprBulkAction, string> = {
 export function GdprListPage() {
   const [tab, setTab] = useState<'all' | GdprStatus>('all')
   const [page, setPage] = useState(1)
+  const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [flagFor, setFlagFor] = useState<GdprCustomer | null>(null)
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null)
 
   const status = tab === 'all' ? undefined : [tab]
-  const { data, loading, error, refetch } = useGdprCustomers({ status, page, per_page: PER_PAGE })
+  const { data, loading, error, refetch } = useGdprCustomers({ q: query || undefined, status, page, per_page: PER_PAGE })
   const actions = useGdprActions()
 
   const rows = useMemo(() => data?.data ?? [], [data])
@@ -78,6 +84,12 @@ export function GdprListPage() {
     setSelected(new Set())
   }
 
+  function handleSearch(q: string) {
+    setQuery(q.trim())
+    setPage(1)
+    setSelected(new Set())
+  }
+
   async function afterMutation(ok: boolean) {
     if (ok) {
       setSelected(new Set())
@@ -88,7 +100,6 @@ export function GdprListPage() {
   function requestBulk(action: GdprBulkAction) {
     const ids = [...selected]
     if (ids.length === 0) return
-    // Destructive actions go through the confirm dialog; others run immediately.
     if (action === 'anonymize' || action === 'reject') {
       setConfirm({ kind: 'bulk', action, ids })
     } else {
@@ -182,22 +193,6 @@ export function GdprListPage() {
         <p className="mt-1 text-sm text-gray-500">Flag, anonymize, and restore customers for GDPR compliance.</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => changeTab(t.key)}
-            className={[
-              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-              tab === t.key ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800',
-            ].join(' ')}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {error && <p className="text-sm text-red-500">{error}</p>}
       {actions.error && <p className="text-sm text-red-500">{actions.error}</p>}
 
@@ -208,84 +203,91 @@ export function GdprListPage() {
         onClear={() => setSelected(new Set())}
       />
 
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={!allSelected && someSelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all"
-                />
-              </TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead className="w-36">Status</TableHead>
-              <TableHead className="w-48">Exclusion type</TableHead>
-              <TableHead className="w-28">Flagged</TableHead>
-              <TableHead className="w-32">Requested by</TableHead>
-              <TableHead className="w-56 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <ListView>
+        <ListViewHeader title="GDPR Records" icon={<ShieldCheck size={15} />} count={data?.meta.total} />
+
+        <ListViewToolbar>
+          <SearchBar onSearch={handleSearch} placeholder="Search by name or customer ID…" />
+          <Select value={tab} onValueChange={(v) => changeTab(v as 'all' | GdprStatus)}>
+            <SelectTrigger className="ml-auto w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TABS.map((t) => (
+                <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ListViewToolbar>
+
+        <ListTable>
+          <ListThead>
+            <ListTh className="w-10">
+              <Checkbox
+                checked={allSelected}
+                indeterminate={!allSelected && someSelected}
+                onCheckedChange={toggleAll}
+                aria-label="Select all"
+              />
+            </ListTh>
+            <ListTh>Customer</ListTh>
+            <ListTh className="w-36">Status</ListTh>
+            <ListTh className="w-48">Exclusion type</ListTh>
+            <ListTh className="w-28">Flagged</ListTh>
+            <ListTh className="w-32">Requested by</ListTh>
+            <ListTh className="w-56 text-right">Actions</ListTh>
+          </ListThead>
+          <tbody>
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <TableRow key={i}><TableCell colSpan={7}><Skeleton className="h-5 w-full" /></TableCell></TableRow>
+                <ListRow key={i}><ListCell colSpan={7}><Skeleton className="h-5 w-full" /></ListCell></ListRow>
               ))
             ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-16 text-center text-sm text-gray-400">No GDPR records found.</TableCell>
-              </TableRow>
+              <ListEmpty colSpan={7} message="No GDPR records found." />
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} data-state={selected.has(row.customer_id) ? 'selected' : undefined}>
-                  <TableCell>
+                <ListRow key={row.id} selected={selected.has(row.customer_id)}>
+                  <ListCell>
                     <Checkbox
                       checked={selected.has(row.customer_id)}
                       onCheckedChange={() => toggleRow(row.customer_id)}
                       aria-label={`Select ${row.customer_name}`}
                     />
-                  </TableCell>
-                  <TableCell>
-                    <Link to={`/customers/${row.customer_id}`} className="font-medium text-gray-900 hover:underline">
+                  </ListCell>
+                  <ListCell>
+                    <Link to={`/customers/${row.customer_id}`} className="font-medium text-[#1A1A2E] hover:text-[#00C48C] hover:underline">
                       {row.customer_name || `#${row.customer_id}`}
                     </Link>
-                  </TableCell>
-                  <TableCell><GdprStatusBadge status={row.status} label={row.status_label} /></TableCell>
-                  <TableCell className="text-sm text-gray-600">
+                  </ListCell>
+                  <ListCell><GdprStatusBadge status={row.status} label={row.status_label} /></ListCell>
+                  <ListCell className="text-gray-600">
                     {row.exclusion_type
                       ? <span title={row.exclusion_description ?? undefined}>{row.exclusion_type}</span>
                       : <span className="text-gray-300">—</span>}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-500">{formatDate(row.flagged_at)}</TableCell>
-                  <TableCell className="text-sm text-gray-600">{row.requested_by?.username || 'System'}</TableCell>
-                  <TableCell>
+                  </ListCell>
+                  <ListCell className="text-gray-500">{formatDate(row.flagged_at)}</ListCell>
+                  <ListCell className="text-gray-600">{row.requested_by?.username || 'System'}</ListCell>
+                  <ListCell>
                     <div className="flex items-center justify-end gap-1.5">{rowActions(row)}</div>
-                  </TableCell>
-                </TableRow>
+                  </ListCell>
+                </ListRow>
               ))
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </ListTable>
 
-        {data && data.meta.last_page > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-100 px-6 py-3">
-            <p className="text-xs text-gray-400">{data.meta.from ?? 0}–{data.meta.to ?? 0} of {data.meta.total}</p>
-            <div className="flex items-center gap-2">
-              <button disabled={data.meta.current_page <= 1} onClick={() => setPage((p) => p - 1)}
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-30">
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-xs text-gray-500">{data.meta.current_page} / {data.meta.last_page}</span>
-              <button disabled={data.meta.current_page >= data.meta.last_page} onClick={() => setPage((p) => p + 1)}
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-30">
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
+        {data && (
+          <ListFooter
+            from={data.meta.from}
+            to={data.meta.to}
+            total={data.meta.total}
+            currentPage={data.meta.current_page}
+            lastPage={data.meta.last_page}
+            noun="records"
+            onPageChange={setPage}
+          />
         )}
-      </div>
+      </ListView>
 
       <GdprFlagDialog
         open={flagFor !== null}

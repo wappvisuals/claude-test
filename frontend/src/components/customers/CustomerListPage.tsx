@@ -1,18 +1,11 @@
 import { useState } from 'react'
 import { useCustomers } from '@/hooks/useCustomers'
 import { useCustomerSearch } from '@/hooks/useCustomerSearch'
+import { Users } from 'lucide-react'
 import { CustomerSearch } from './CustomerSearch'
 import { CustomerTable } from './CustomerTable'
-import type { CustomerListParams, CustomerStatus } from '@/types/customer'
-
-type ActiveTab = 'all' | CustomerStatus
-
-const TABS: { key: ActiveTab; label: string }[] = [
-  { key: 'all',      label: 'All customers' },
-  { key: 'active',   label: 'Active' },
-  { key: 'inactive', label: 'Inactive' },
-  { key: 'blocked',  label: 'Blocked' },
-]
+import { ListView, ListViewHeader, ListViewToolbar, ListFooter } from '@/components/ui/ListView'
+import type { CustomerListParams } from '@/types/customer'
 
 interface DateFilters {
   last_order_after?: string
@@ -22,20 +15,13 @@ interface DateFilters {
 const PER_PAGE = 25
 
 export function CustomerListPage() {
-  const [activeTab, setActiveTab]       = useState<ActiveTab>('all')
   const [query, setQuery]               = useState('')
   const [searchTokens, setSearchTokens] = useState<string[]>([])
   const [isSearchMode, setIsSearchMode] = useState(false)
   const [page, setPage]                 = useState(1)
   const [dateFilters, setDateFilters]   = useState<DateFilters>({})
 
-  const activeStatus: CustomerStatus[] = activeTab === 'all' ? [] : [activeTab]
-
-  const listParams: CustomerListParams = {
-    page,
-    per_page: PER_PAGE,
-    status: activeStatus.length > 0 ? activeStatus : undefined,
-  }
+  const listParams: CustomerListParams = { page, per_page: PER_PAGE }
 
   const { data: listData, loading: listLoading, error: listError } =
     useCustomers(isSearchMode ? {} : listParams)
@@ -54,26 +40,8 @@ export function CustomerListPage() {
     if (trimmed) {
       setSearchParams({
         q: trimmed,
-        status: activeStatus.length > 0 ? activeStatus : undefined,
         last_order_after:  filters.last_order_after,
         last_order_before: filters.last_order_before,
-        page: 1,
-        per_page: PER_PAGE,
-      })
-    }
-  }
-
-  function handleTabChange(tab: ActiveTab) {
-    setActiveTab(tab)
-    setPage(1)
-    const newStatus: CustomerStatus[] = tab === 'all' ? [] : [tab]
-
-    if (isSearchMode && query.trim()) {
-      setSearchParams({
-        q: query.trim(),
-        status: newStatus.length > 0 ? newStatus : undefined,
-        last_order_after:  dateFilters.last_order_after,
-        last_order_before: dateFilters.last_order_before,
         page: 1,
         per_page: PER_PAGE,
       })
@@ -85,7 +53,6 @@ export function CustomerListPage() {
     if (isSearchMode) {
       setSearchParams({
         q: query.trim(),
-        status: activeStatus.length > 0 ? activeStatus : undefined,
         last_order_after:  dateFilters.last_order_after,
         last_order_before: dateFilters.last_order_before,
         page: newPage,
@@ -98,50 +65,41 @@ export function CustomerListPage() {
   const loading = isSearchMode ? searching     : listLoading
   const error   = isSearchMode ? searchError   : listError
 
-  const sectionTitle = isSearchMode
-    ? `Results for "${query.trim()}"`
-    : activeTab === 'all'
-      ? 'All customers'
-      : `${TABS.find((t) => t.key === activeTab)?.label} customers`
+  const sectionTitle = isSearchMode ? `Results for "${query.trim()}"` : 'All customers'
 
   return (
     <div className="flex flex-col gap-5 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Customers</h1>
-        <div className="flex items-center gap-1">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => handleTabChange(tab.key)}
-              className={[
-                'px-4 py-1.5 rounded-full text-sm font-medium transition-colors',
-                activeTab === tab.key
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100',
-              ].join(' ')}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+          <Users size={24} className="text-gray-700" />
+          Customers
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">Browse, search, and manage customer profiles.</p>
       </div>
 
-      <CustomerSearch onSearch={handleSearch} />
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
+      <ListView>
+        <ListViewHeader title={sectionTitle} icon={<Users size={15} />} count={data?.meta.total} />
 
-      <div>
-        <h2 className="text-sm font-semibold text-gray-800 mb-3">{sectionTitle}</h2>
-        <CustomerTable
-          data={data}
-          loading={loading}
-          searchTokens={searchTokens}
-          onPageChange={handlePageChange}
-        />
-      </div>
+        <ListViewToolbar>
+          <CustomerSearch onSearch={handleSearch} />
+        </ListViewToolbar>
+
+        <CustomerTable data={data} loading={loading} searchTokens={searchTokens} />
+
+        {data && (
+          <ListFooter
+            from={data.meta.from}
+            to={data.meta.to}
+            total={data.meta.total}
+            currentPage={data.meta.current_page}
+            lastPage={data.meta.last_page}
+            noun="customers"
+            onPageChange={handlePageChange}
+          />
+        )}
+      </ListView>
     </div>
   )
 }
