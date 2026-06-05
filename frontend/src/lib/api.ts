@@ -204,6 +204,14 @@ export async function fetchCustomerPolicies(customerId: number): Promise<Insuran
   return response.data
 }
 
+export async function createPolicy(
+  customerId: number,
+  payload: { product: string; start_date: string; relationship?: string | null }
+): Promise<InsurancePolicy> {
+  const response = await http.post<{ data: InsurancePolicy }>(`/customers/${customerId}/policies`, payload)
+  return response.data.data
+}
+
 export async function cancelPolicy(id: string, endDate: string): Promise<InsurancePolicy> {
   const response = await http.post<{ data: InsurancePolicy }>(`/policies/${id}/cancel`, { endDate })
   return response.data.data
@@ -222,6 +230,22 @@ export async function deletePolicy(id: string): Promise<void> {
 
 export async function fetchSinfridAccount(customerId: number): Promise<SinfridAccount> {
   const response = await http.get<{ data: SinfridAccount }>(`/customers/${customerId}/sinfrid-account`)
+  return response.data.data
+}
+
+export async function createSinfridAccount(
+  customerId: number,
+  payload: { plan_id: number; activation_date?: string | null; first_name?: string | null; last_name?: string | null; email?: string | null; phone?: string | null }
+): Promise<SinfridAccount> {
+  const response = await http.post<{ data: SinfridAccount }>(`/customers/${customerId}/sinfrid-account`, payload)
+  return response.data.data
+}
+
+export async function updateSinfridAccount(
+  accountId: string,
+  payload: Partial<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null; city: string | null; street: string | null; zipcode: string | null }>
+): Promise<SinfridAccount> {
+  const response = await http.patch<{ data: SinfridAccount }>(`/sinfrid-account/${accountId}`, payload)
   return response.data.data
 }
 

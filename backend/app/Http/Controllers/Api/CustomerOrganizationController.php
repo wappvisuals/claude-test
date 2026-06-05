@@ -37,7 +37,12 @@ class CustomerOrganizationController extends Controller
             ['name' => $orgName ?? $existing->name],
         );
 
+        $previousOrgId = $customer->organization_id;
         $customer->update(['organization_id' => $orgId]);
+
+        if ($previousOrgId !== $orgId) {
+            $customer->logChange('organization', 'organization_id', $previousOrgId, $orgId);
+        }
 
         return new CustomerResource(
             Customer::query()

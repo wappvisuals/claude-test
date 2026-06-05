@@ -48,6 +48,23 @@ trait CustomerChangeLogger
         }
     }
 
+    /**
+     * Record a single semantic change (not driven by dirty model attributes) —
+     * e.g. blocking an SSN or linking an organization.
+     */
+    public function logChange(string $action, string $field, mixed $oldValue, mixed $newValue): void
+    {
+        $this->changes()->create([
+            'change_initiator_user_id' => auth()->id(),
+            'change_batch_id' => (int) ($this->changes()->max('change_batch_id') ?? 0) + 1,
+            'change_action' => $action,
+            'change_date' => now(),
+            'change_field' => $field,
+            'change_old_value' => $this->stringifyChangeValue($oldValue),
+            'change_new_value' => $this->stringifyChangeValue($newValue),
+        ]);
+    }
+
     private function stringifyChangeValue(mixed $value): ?string
     {
         if ($value === null) {

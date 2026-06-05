@@ -5,6 +5,9 @@ import { DropdownMenu, DropdownItem, DropdownLabel, DropdownSeparator } from '@/
 /** Derive a breadcrumb trail from the current path for the header. */
 function useBreadcrumb(): string[] {
   const { pathname } = useLocation()
+  if (/\/customers\/\d+\/sinfrid/.test(pathname)) return ['Customers', 'Customer details', 'Sinfrid Account']
+  if (/\/customers\/\d+\/comments/.test(pathname)) return ['Customers', 'Customer details', 'Comments']
+  if (/\/customers\/\d+\/changes/.test(pathname)) return ['Customers', 'Customer details', 'Change Logs']
   if (pathname.startsWith('/customers/')) return ['Customers', 'Customer details']
   if (pathname.startsWith('/customers')) return ['Customers']
   if (pathname.startsWith('/gdpr')) return ['Customers', 'GDPR']

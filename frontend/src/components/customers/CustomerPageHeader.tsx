@@ -3,11 +3,12 @@ import { ArrowLeft } from 'lucide-react'
 import type { Customer } from '@/types/customer'
 
 interface Props {
-  customer: Customer
-  onEdit: () => void
+  customer?: Customer
+  onEdit?: () => void
+  title?: string
 }
 
-export function CustomerPageHeader({ customer: _customer, onEdit: _onEdit }: Props) {
+export function CustomerPageHeader({ customer: _customer, onEdit: _onEdit, title = 'Customer details' }: Props) {
   const navigate = useNavigate()
 
   return (
@@ -21,7 +22,7 @@ export function CustomerPageHeader({ customer: _customer, onEdit: _onEdit }: Pro
           <ArrowLeft size={15} />
         </button>
         <span className="text-[15px] font-semibold text-[#1A1A2E]">
-          Customer details
+          {title}
         </span>
       </div>
     </div>

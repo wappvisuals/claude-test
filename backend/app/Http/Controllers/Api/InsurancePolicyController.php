@@ -25,6 +25,19 @@ class InsurancePolicyController extends Controller
         }
     }
 
+    public function store(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'product' => 'required|string|max:64',
+            'start_date' => 'required|date_format:Y-m-d',
+            'relationship' => 'nullable|string|max:50',
+        ]);
+
+        return $this->run(fn () => new InsurancePolicyResource(
+            $this->service->createForCustomer($id, $validated)
+        ), 'Insurance policy created.');
+    }
+
     public function cancel(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([

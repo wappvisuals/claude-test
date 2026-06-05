@@ -1,18 +1,9 @@
 import { useState } from 'react'
 import {
-  FileText, RefreshCw, ShoppingCart, Filter, SlidersHorizontal, Plus,
+  RefreshCw, ShoppingCart, Filter, SlidersHorizontal, Plus,
 } from 'lucide-react'
-import { parseComments, serializeComments, buildCommentLine } from '@/lib/comments'
-import { CustomerCommentsList } from './CustomerCommentsList'
-import type { Customer, CustomerUpdatePayload } from '@/types/customer'
 
-interface Props {
-  customer: Customer
-  onSave: (payload: CustomerUpdatePayload) => Promise<void>
-  saving: boolean
-}
-
-type CenterTab = 'subscriptions' | 'orders' | 'comments'
+type CenterTab = 'subscriptions' | 'orders'
 
 // ─── Shared table primitives ───────────────────────────────────────────────────
 
@@ -193,37 +184,10 @@ function OrdersContent() {
 const TABS: { id: CenterTab; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
   { id: 'subscriptions', label: 'Subscriptions', icon: RefreshCw },
   { id: 'orders',        label: 'Orders',        icon: ShoppingCart },
-  { id: 'comments',      label: 'Comments',      icon: FileText },
 ]
 
-export function CustomerProfileCenter({ customer, onSave, saving }: Props) {
+export function CustomerProfileCenter() {
   const [activeTab, setActiveTab] = useState<CenterTab>('subscriptions')
-
-  const comments = parseComments(customer.comments)
-
-  async function handleAddComment(text: string, author: string, scope: string) {
-    const line = buildCommentLine(text, author, scope)
-    const existing = customer.comments?.trim() ?? ''
-    await onSave({ comments: existing ? `${existing}\n${line}` : line })
-  }
-
-  async function handleEditComment(index: number, text: string, scope: string) {
-    const updated = comments.map((c, i) => {
-      if (i !== index || !c.parseable) return c
-      return {
-        ...c,
-        text: text.trim(),
-        scope: scope || 'all',
-        raw: `${text.trim()} /${c.author}, ${c.date}, ${c.time} @${scope || 'all'}`,
-      }
-    })
-    await onSave({ comments: serializeComments(updated) || null })
-  }
-
-  async function handleDeleteComment(index: number) {
-    const updated = comments.filter((_, i) => i !== index)
-    await onSave({ comments: serializeComments(updated) || null })
-  }
 
   return (
     <div className="bg-white border border-[#EBEBF5] rounded-xl overflow-hidden">
@@ -248,15 +212,6 @@ export function CustomerProfileCenter({ customer, onSave, saving }: Props) {
       {/* Tab content */}
       {activeTab === 'subscriptions' && <SubscriptionsContent />}
       {activeTab === 'orders' && <OrdersContent />}
-      {activeTab === 'comments' && (
-        <CustomerCommentsList
-          comments={comments}
-          saving={saving}
-          onAdd={handleAddComment}
-          onEdit={handleEditComment}
-          onDelete={handleDeleteComment}
-        />
-      )}
     </div>
   )
 }

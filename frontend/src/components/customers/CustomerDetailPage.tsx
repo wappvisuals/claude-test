@@ -9,9 +9,7 @@ import { CustomerProfileStats } from './CustomerProfileStats'
 import { CustomerProfileCenter } from './CustomerProfileCenter'
 import { CustomerEditForm } from './CustomerEditForm'
 import { CustomerRemindersCard } from './CustomerRemindersCard'
-import { CustomerChangeLogDrawer } from './CustomerChangeLogDrawer'
-import { InsurancePoliciesCard } from '@/components/insurance/InsurancePoliciesCard'
-import { SinfridAccountCard } from '@/components/sinfrid/SinfridAccountCard'
+import { CustomerProfileTabs } from './CustomerProfileTabs'
 import type { Customer, CustomerUpdatePayload } from '@/types/customer'
 
 export function CustomerDetailPage() {
@@ -77,6 +75,7 @@ export function CustomerDetailPage() {
   return (
     <div className="flex flex-col">
       <CustomerPageHeader customer={customer} onEdit={() => setIsEditing(true)} />
+      <CustomerProfileTabs id={Number(id)} />
       <div className="flex flex-col gap-4 p-6">
         <CustomerRemindersCard
           customer={customer}
@@ -90,15 +89,8 @@ export function CustomerDetailPage() {
           onBlockChange={handleBlockChange}
         />
         <CustomerProfileStats customer={customer} />
-        <CustomerProfileCenter
-          customer={customer}
-          onSave={handleSaveNotes}
-          saving={saving}
-        />
-        <SinfridAccountCard customerId={Number(id)} />
-        <InsurancePoliciesCard customerId={Number(id)} />
+        <CustomerProfileCenter />
       </div>
-      <CustomerChangeLogDrawer customerId={Number(id)} />
     </div>
   )
 }

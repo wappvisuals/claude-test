@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShieldCheck, RefreshCw, XCircle, Trash2 } from 'lucide-react'
+import { ShieldCheck, RefreshCw, XCircle, Trash2, Plus } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useInsurancePolicies } from '@/hooks/useInsurancePolicies'
 import { cancelPolicy, syncPolicyStatus, deletePolicy, getErrorMessage } from '@/lib/api'
+import { InsuranceAddDialog } from './InsuranceAddDialog'
 import type { InsurancePolicy } from '@/types/insurancePolicy'
 
 function statusTone(status: string | null): string {
@@ -25,6 +26,7 @@ export function InsurancePoliciesCard({ customerId }: { customerId: number }) {
   const { data, loading, error, refetch } = useInsurancePolicies(customerId)
   const [cancelFor, setCancelFor] = useState<InsurancePolicy | null>(null)
   const [deleteFor, setDeleteFor] = useState<InsurancePolicy | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
   const [endDate, setEndDate] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -58,10 +60,15 @@ export function InsurancePoliciesCard({ customerId }: { customerId: number }) {
 
   return (
     <div className="rounded-xl border border-[#EBEBF5] bg-white p-6">
-      <div className="mb-4 flex items-center gap-2">
-        <ShieldCheck size={18} className="text-gray-500" />
-        <h2 className="text-sm font-semibold text-gray-800">Insurance Policies</h2>
-        {data && <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">{policies.length}</span>}
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <ShieldCheck size={18} className="text-gray-500" />
+          <h2 className="text-sm font-semibold text-gray-800">Insurance Policies</h2>
+          {data && <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">{policies.length}</span>}
+        </div>
+        <Button size="sm" onClick={() => setAddOpen(true)}>
+          <Plus size={14} /> Add policy
+        </Button>
       </div>
 
       {actionError && <p className="mb-3 text-sm text-red-500">{actionError}</p>}
@@ -145,6 +152,13 @@ export function InsurancePoliciesCard({ customerId }: { customerId: number }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <InsuranceAddDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        customerId={customerId}
+        onCreated={refetch}
+      />
 
       <ConfirmDialog
         open={deleteFor !== null}

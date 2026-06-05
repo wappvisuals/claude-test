@@ -16,6 +16,54 @@ use RuntimeException;
  */
 class SinfridAccountService
 {
+    /**
+     * Create a Sinfrid account for a customer (local). Prefills contact details
+     * from the customer profile; reactivates an existing deactivated account.
+     */
+    public function createForCustomer(int $customerId, array $data): SinfridAccount
+    {
+        $customer = Customer::query()->where('to_user', $customerId)->first();
+
+        if (!$customer) {
+            throw new RuntimeException("Customer not found: $customerId");
+        }
+
+        $existing = SinfridAccount::query()->where('customer_id', $customerId)->first();
+        if ($existing) {
+            if ($existing->is_deactivated) {
+                $existing->reactivate();
+
+                return $existing->load('familyMembers');
+            }
+            throw new RuntimeException('Customer already has an active Sinfrid account.');
+        }
+
+        $planId = (int) ($data['plan_id'] ?? 0);
+        if (!AccountPlan::isValidId($planId)) {
+            throw new RuntimeException("Invalid plan id: $planId");
+        }
+
+        $account = SinfridAccount::query()->create([
+            'id' => (string) Str::uuid(),
+            'customer_id' => $customerId,
+            'type' => AccountPlan::getCategoryById($planId),
+            'plan_id' => $planId,
+            'first_name' => $data['first_name'] ?? $customer->first_name,
+            'last_name' => $data['last_name'] ?? $customer->last_name,
+            'email' => $data['email'] ?? $customer->email,
+            'phone' => $data['phone'] ?? $customer->tel,
+            'city' => $customer->ort,
+            'street' => $customer->adress,
+            'zipcode' => $customer->post_nr,
+            'lang_code' => 'SV',
+            'country_code' => $customer->region_code,
+            'activation_date' => $data['activation_date'] ?? now()->toDateString(),
+            'status' => true,
+        ]);
+
+        return $account->load('familyMembers');
+    }
+
     public function getForCustomer(int $customerId): SinfridAccount
     {
         $customer = Customer::query()->where('to_user', $customerId)->first();

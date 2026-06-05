@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   ShieldHalf, UserPlus, Pencil, Trash2, Power, AlertTriangle,
-  Bell, Activity, CheckCircle2, XCircle,
+  Bell, Activity, CheckCircle2, XCircle, Plus,
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,8 @@ import {
 import type { SinfridAlarm, SinfridActivity, SinfridMember } from '@/types/sinfrid'
 import { SinfridFamilyMemberDialog } from './SinfridFamilyMemberDialog'
 import { SinfridPlanChangeDialog } from './SinfridPlanChangeDialog'
+import { SinfridCreateDialog } from './SinfridCreateDialog'
+import { SinfridEditDialog } from './SinfridEditDialog'
 
 type Confirm =
   | { kind: 'status'; activate: boolean }
@@ -41,6 +43,8 @@ export function SinfridAccountCard({ customerId }: { customerId: number }) {
   const [alarms, setAlarms] = useState<SinfridAlarm[]>([])
   const [activities, setActivities] = useState<SinfridActivity[]>([])
   const [planOpen, setPlanOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const [memberDialog, setMemberDialog] = useState<{ open: boolean; member: SinfridMember | null }>({ open: false, member: null })
   const [confirm, setConfirm] = useState<Confirm | null>(null)
 
@@ -82,7 +86,18 @@ export function SinfridAccountCard({ customerId }: { customerId: number }) {
           <ShieldHalf size={18} className="text-gray-500" />
           <h2 className="text-sm font-semibold text-gray-800">Sinfrid Account</h2>
         </div>
-        <p className="py-6 text-center text-sm text-gray-400">This customer has no Sinfrid account.</p>
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <p className="text-sm text-gray-400">This customer has no Sinfrid account.</p>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus size={14} /> Create account
+          </Button>
+        </div>
+        <SinfridCreateDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          customerId={customerId}
+          onCreated={refetch}
+        />
       </div>
     )
   }
@@ -134,6 +149,9 @@ export function SinfridAccountCard({ customerId }: { customerId: number }) {
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil size={14} /> Edit
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setConfirm({ kind: 'status', activate: account.is_deactivated })}>
             <Power size={14} /> {account.is_deactivated ? 'Activate' : 'Deactivate'}
           </Button>
@@ -243,6 +261,7 @@ export function SinfridAccountCard({ customerId }: { customerId: number }) {
       </div>
 
       {/* Dialogs */}
+      <SinfridEditDialog open={editOpen} onOpenChange={setEditOpen} account={account} onSaved={refreshAll} />
       <SinfridPlanChangeDialog
         open={planOpen}
         onOpenChange={setPlanOpen}

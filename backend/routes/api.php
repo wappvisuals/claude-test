@@ -41,7 +41,9 @@ Route::delete('/sinfrid-account/{id}', [SinfridAccountController::class, 'destro
 // Customer-scoped
 Route::get('/customers/{id}/changes', [CustomerChangeController::class, 'index'])->where('id', '[0-9]+');
 Route::get('/customers/{id}/policies', [InsurancePolicyController::class, 'index'])->where('id', '[0-9]+');
+Route::post('/customers/{id}/policies', [InsurancePolicyController::class, 'store'])->where('id', '[0-9]+');
 Route::get('/customers/{id}/sinfrid-account', [SinfridAccountController::class, 'show'])->where('id', '[0-9]+');
+Route::post('/customers/{id}/sinfrid-account', [SinfridAccountController::class, 'store'])->where('id', '[0-9]+');
 Route::get('/customers/{id}/sinfrid-account/alarms', [SinfridAccountController::class, 'alarms'])->where('id', '[0-9]+');
 Route::get('/customers/{id}/sinfrid-account/activities', [SinfridAccountController::class, 'activities'])->where('id', '[0-9]+');
 Route::put('/customers/{id}/gdpr/flag', [GdprCustomerController::class, 'flag'])->where('id', '[0-9]+');

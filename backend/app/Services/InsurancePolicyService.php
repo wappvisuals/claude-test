@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Customer;
 use App\Models\InsurancePolicy;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -26,6 +27,23 @@ class InsurancePolicyService
             ->where('customer_id', $customerId)
             ->latest('created_at')
             ->paginate($perPage);
+    }
+
+    public function createForCustomer(int $customerId, array $data): InsurancePolicy
+    {
+        if (!Customer::query()->where('to_user', $customerId)->exists()) {
+            throw new RuntimeException("Customer not found: $customerId");
+        }
+
+        return InsurancePolicy::query()->create([
+            'id' => (string) Str::uuid(),
+            'customer_id' => $customerId,
+            'product' => $data['product'],
+            'start_date' => $data['start_date'],
+            'relationship' => $data['relationship'] ?? null,
+            'status' => 'active',
+            'source' => 'manual',
+        ]);
     }
 
     public function handleCancellation(string $id, array $data): InsurancePolicy

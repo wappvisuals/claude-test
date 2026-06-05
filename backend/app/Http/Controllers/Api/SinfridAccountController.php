@@ -28,6 +28,20 @@ class SinfridAccountController extends Controller
         }
     }
 
+    public function store(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'plan_id' => 'required|integer',
+            'activation_date' => 'nullable|date_format:Y-m-d',
+            'first_name' => 'nullable|string|max:64',
+            'last_name' => 'nullable|string|max:64',
+            'email' => 'nullable|email|max:128',
+            'phone' => 'nullable|string|max:30',
+        ]);
+
+        return $this->run(fn () => new SinfridAccountResource($this->service->createForCustomer($id, $validated)), 201);
+    }
+
     public function alarms(Request $request, int $id): AnonymousResourceCollection|JsonResponse
     {
         try {

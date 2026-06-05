@@ -219,10 +219,31 @@ bulk actions; confirmation dialogs before destructive actions.
 - `components/customers/CustomerChangeLog.tsx` exports `CustomerChangeLogContent`
   — timeline grouped by `change_batch_id`, showing field, old→new, action, user,
   date.
-- **UI requirement (updated):** the profile content must stay clean, so the
-  change log is NOT an inline card. Instead `CustomerChangeLogDrawer.tsx`
-  renders a **floating button pinned to the right edge** of the customer profile
-  that opens the log in a right slide-over (`components/ui/drawer.tsx`).
+- **UI (updated):** the change log is its own screen within the profile —
+  route `/customers/:id/changes` (`CustomerChangeLogPage`), reached via the
+  `CustomerProfileTabs` sub-nav. `CustomerChangeLog.tsx` exports
+  `CustomerChangeLogContent` (timeline + filters/search) used there.
+  (The earlier floating-drawer approach is retired.)
+
+**Profile sub-navigation (applies across features):** a customer profile is
+split into tabbed screens via `CustomerProfileTabs`, in order:
+**Overview** (`/customers/:id`) | **Sinfrid Account** (`/customers/:id/sinfrid`)
+| **Comments** (`/customers/:id/comments`, `CustomerCommentsPage`) |
+**Change Logs** (`/customers/:id/changes`). The Overview no longer carries
+comments, change log, insurance, or Sinfrid inline.
+
+**Sinfrid dashboard screen** is a **two-column** layout: `SinfridAccountCard`
+(left) + `InsurancePoliciesCard` (right).
+- **Create / update Sinfrid account (local):** `POST /customers/{id}/sinfrid-account`
+  (`SinfridCreateDialog` — plan + activation date, contact prefilled from the
+  customer; reactivates a deactivated account) and `PATCH /sinfrid-account/{id}`
+  (`SinfridEditDialog` — contact details). Empty state offers "Create account".
+  Legacy equivalents (read for reference): `CustomerAPI::addSinfridAccount` +
+  `SinfridAccountService::createForCustomer` (Defentry-backed there).
+- **Create insurance policy (local):** `POST /customers/{id}/policies`
+  (`InsuranceAddDialog` — product + start date + relationship). Legacy
+  equivalent: `CustomerAPI::addPolicy` + `InsurancePolicyService::createForCustomer`
+  (partner-API-backed there). All create flows are local-DB here.
 
 ### Feature 3 — Blocked SSN
 **Goal:** list blocklisted SSNs; add with reason; remove. **Plus (updated):**
@@ -326,13 +347,14 @@ email-resend as optional since it needs SendGrid.)
   - `DELETE /api/sinfrid-account/{id}`
 
 **Frontend**
-- `types/sinfrid.ts`, `lib/api.ts`, `hooks/useSinfridAccount.ts`,
-  `useSinfridAlarms.ts`, `useSinfridActions.ts`.
-- `components/sinfrid/SinfridAccountCard.tsx` (details + plan),
-  `SinfridFamilyMembers.tsx` (add/edit/remove), `SinfridAlarmsList.tsx`,
-  `SinfridActivitiesList.tsx`, `SinfridPlanChangeDialog.tsx`. Mount on
-  `CustomerDetailPage` (tabbed). Confirm dialogs for remove member / deactivate
-  / delete / plan change.
+- `types/sinfrid.ts`, `lib/api.ts`, `hooks/useSinfridAccount.ts`.
+- **Separate dashboard screen (updated):** Sinfrid is NOT inline on the overview.
+  It has its own route `/customers/:id/sinfrid` (`SinfridDashboardPage`), reached
+  via `CustomerProfileTabs` (Overview | Sinfrid Account) shown on both screens.
+  `components/sinfrid/SinfridAccountCard.tsx` is the dashboard body — account
+  details + plan (`SinfridPlanChangeDialog`), family members
+  (`SinfridFamilyMemberDialog` add/edit + remove confirm), alarms list, activity
+  feed, activate/deactivate + delete (confirm dialogs).
 
 ---
 

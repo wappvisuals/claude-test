@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BlockedSsn;
+use App\Models\Customer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use RuntimeException;
 
@@ -34,16 +35,36 @@ class BlockedSsnService
             'reason' => $reason,
         ]);
 
+        $this->logToCustomer($ssn, 'block', 'no', 'yes');
+
         return $record->load('addedBy');
     }
 
     public function unblock(int $id): void
     {
-        BlockedSsn::query()->findOrFail($id)->delete();
+        $record = BlockedSsn::query()->findOrFail($id);
+        $ssn = $record->ssn;
+        $record->delete();
+
+        $this->logToCustomer($ssn, 'unblock', 'yes', 'no');
     }
 
     public function unblockBySsn(string $ssn): void
     {
-        BlockedSsn::query()->where('ssn', $ssn)->delete();
+        $deleted = BlockedSsn::query()->where('ssn', $ssn)->delete();
+
+        if ($deleted > 0) {
+            $this->logToCustomer($ssn, 'unblock', 'yes', 'no');
+        }
+    }
+
+    /**
+     * Record the block/unblock in the customer change log, if the SSN belongs to
+     * a known customer (change_user_id is a FK to customer_profile.to_user).
+     */
+    private function logToCustomer(string $ssn, string $action, string $old, string $new): void
+    {
+        $customer = Customer::query()->where('pers_nr', $ssn)->first();
+        $customer?->logChange($action, 'ssn_blocked', $old, $new);
     }
 }
