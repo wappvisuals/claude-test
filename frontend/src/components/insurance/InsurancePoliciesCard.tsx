@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { useInsurancePolicies } from '@/hooks/useInsurancePolicies'
 import { cancelPolicy, syncPolicyStatus, deletePolicy, getErrorMessage } from '@/lib/api'
 import { InsuranceAddDialog } from './InsuranceAddDialog'
@@ -28,6 +29,7 @@ export function InsurancePoliciesCard({ customerId }: { customerId: number }) {
   const [deleteFor, setDeleteFor] = useState<InsurancePolicy | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [endDate, setEndDate] = useState('')
+  const [cancelReason, setCancelReason] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -48,7 +50,7 @@ export function InsurancePoliciesCard({ customerId }: { customerId: number }) {
 
   async function handleCancel() {
     if (!cancelFor) return
-    await cancelPolicy(cancelFor.id, endDate)
+    await cancelPolicy(cancelFor.id, endDate, cancelReason.trim())
     refetch()
   }
 
@@ -109,7 +111,7 @@ export function InsurancePoliciesCard({ customerId }: { customerId: number }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setActionError(null); setEndDate(''); setCancelFor(p) }}
+                  onClick={() => { setActionError(null); setEndDate(''); setCancelReason(''); setCancelFor(p) }}
                   className="rounded p-1.5 text-gray-400 transition-colors hover:bg-amber-50 hover:text-amber-600"
                   title="Cancel policy"
                 >
@@ -136,15 +138,21 @@ export function InsurancePoliciesCard({ customerId }: { customerId: number }) {
             <DialogTitle>Cancel insurance policy</DialogTitle>
             <DialogDescription>Set the end date for {cancelFor?.product || 'this policy'}.</DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="end-date" className="text-sm font-medium text-gray-700">End date</label>
-            <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="end-date" className="text-sm font-medium text-gray-700">End date <span className="text-red-500">*</span></label>
+              <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="cancel-reason" className="text-sm font-medium text-gray-700">Reason <span className="text-red-500">*</span></label>
+              <Textarea id="cancel-reason" rows={2} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="Why is this policy being cancelled?" />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancelFor(null)}>Back</Button>
             <Button
               variant="destructive"
-              disabled={!endDate}
+              disabled={!endDate || cancelReason.trim().length === 0}
               onClick={async () => { await handleCancel(); setCancelFor(null) }}
             >
               Cancel policy

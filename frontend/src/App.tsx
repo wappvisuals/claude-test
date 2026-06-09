@@ -7,6 +7,9 @@ import { GdprListPage } from './components/gdpr/GdprListPage'
 import { SinfridDashboardPage } from './components/sinfrid/SinfridDashboardPage'
 import { CustomerCommentsPage } from './components/customers/CustomerCommentsPage'
 import { CustomerChangeLogPage } from './components/customers/CustomerChangeLogPage'
+import { OrderListPage } from './components/orders/OrderListPage'
+import { OrderViewPage } from './components/orders/OrderViewPage'
+import { SubscriptionViewPage } from './components/subscriptions/SubscriptionViewPage'
 
 export default function App() {
   return (
@@ -20,6 +23,9 @@ export default function App() {
           <Route path="/customers/:id/sinfrid" element={<SinfridDashboardPage />} />
           <Route path="/gdpr" element={<GdprListPage />} />
           <Route path="/blocked-ssn" element={<BlockedSsnPage />} />
+          <Route path="/orders" element={<OrderListPage />} />
+          <Route path="/orders/:id" element={<OrderViewPage />} />
+          <Route path="/subscriptions/:id" element={<SubscriptionViewPage />} />
           <Route index element={<Navigate to="/customers" replace />} />
           <Route path="*" element={<Navigate to="/customers" replace />} />
         </Route>

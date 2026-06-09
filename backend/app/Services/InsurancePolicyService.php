@@ -17,7 +17,7 @@ class InsurancePolicyService
 {
     public function getListForCustomer(int $customerId, array $params = []): LengthAwarePaginator
     {
-        if (!Customer::query()->where('to_user', $customerId)->exists()) {
+        if (! Customer::query()->where('to_user', $customerId)->exists()) {
             throw new RuntimeException("Customer not found: $customerId");
         }
 
@@ -31,7 +31,7 @@ class InsurancePolicyService
 
     public function createForCustomer(int $customerId, array $data): InsurancePolicy
     {
-        if (!Customer::query()->where('to_user', $customerId)->exists()) {
+        if (! Customer::query()->where('to_user', $customerId)->exists()) {
             throw new RuntimeException("Customer not found: $customerId");
         }
 
@@ -52,7 +52,9 @@ class InsurancePolicyService
 
         $policy->status = 'cancelled';
         $policy->end_date = $data['endDate'];
-        $policy->status_message = 'Cancelled manually';
+        $policy->status_message = ! empty($data['reason'])
+            ? 'Cancelled: '.$data['reason']
+            : 'Cancelled manually';
         $policy->save();
 
         return $policy;
@@ -76,7 +78,7 @@ class InsurancePolicyService
     {
         $policy = InsurancePolicy::query()->find($id);
 
-        if (!$policy) {
+        if (! $policy) {
             throw new RuntimeException("Policy not found for ID: $id");
         }
 

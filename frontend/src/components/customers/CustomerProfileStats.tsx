@@ -1,5 +1,6 @@
 import { RefreshCw, ShoppingCart, FileText, Clock } from 'lucide-react'
 import type { Customer } from '@/types/customer'
+import { useCustomerStoreStats } from '@/hooks/useCustomerStoreStats'
 
 interface Props {
   customer: Customer
@@ -68,8 +69,9 @@ function HighlightCard({ value, label }: { value: string; label: string }) {
 }
 
 export function CustomerProfileStats({ customer }: Props) {
+  const { data: stats } = useCustomerStoreStats(customer.to_user)
   const ledgerCount = Array.isArray(customer.ledgers) ? customer.ledgers.length : 0
-  const lastOrder = customer.last_order ?? 'No orders'
+  const lastOrder = stats?.last_order ?? customer.last_order ?? 'No orders'
 
   return (
     <div className="grid grid-cols-4 gap-4">
@@ -78,18 +80,18 @@ export function CustomerProfileStats({ customer }: Props) {
         iconBg="bg-yellow-50"
         title="Subscriptions"
         leftLabel="Active"
-        leftValue="0"
+        leftValue={String(stats?.subscriptions.active ?? 0)}
         rightLabel="Cancelled"
-        rightValue="0"
+        rightValue={String(stats?.subscriptions.cancelled ?? 0)}
       />
       <StatCard
         icon={<ShoppingCart size={15} className="text-blue-500" />}
         iconBg="bg-blue-50"
         title="Orders"
         leftLabel="Approved"
-        leftValue="0"
+        leftValue={String(stats?.orders.approved ?? 0)}
         rightLabel="Pending"
-        rightValue="0"
+        rightValue={String(stats?.orders.pending ?? 0)}
       />
       <StatCard
         icon={<FileText size={15} className="text-rose-500" />}
@@ -102,7 +104,7 @@ export function CustomerProfileStats({ customer }: Props) {
       />
       <HighlightCard
         value={lastOrder}
-        label={customer.last_order ? 'Last order date' : 'No orders yet'}
+        label={(stats?.last_order ?? customer.last_order) ? 'Last order date' : 'No orders yet'}
       />
     </div>
   )

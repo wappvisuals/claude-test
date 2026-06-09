@@ -169,3 +169,227 @@ Organisations linked to customers. ~54 rows in production.
 | `customer_organizations.name` | text | no length limit |
 | `customer_organizations.contact_email` | varchar(100) | email\|max:100 |
 | `customer_organizations.invoice_email` | varchar(100) | email\|max:100 |
+
+---
+
+## Store Tables — Orders, Subscriptions, Adjustments
+
+Imported (legacy `gracewel_grace`) for the **store-order-subscription-suite**.
+Not Laravel-migrated — bind Eloquent models with explicit `$table`/`$primaryKey`
+and the timestamp flags noted below.
+
+### Eloquent binding cheatsheet
+
+| Model → table | PK | Timestamps | Notes |
+|---|---|---|---|
+| `Order` → `orders` | `id` | **OFF** (`public $timestamps=false`) | `cart`=PHP-serialized text; `metadata`=JSON |
+| `Subscription` → `subscriptions` | `id` | **ON** (has `created_at`/`updated_at`) | sentinel `'0000-00-00'` dates → null in resource |
+| `OrderAdjustment` → `order_adjustments` | `id` | **`created_at` only** (`const UPDATED_AT = null`) | `metadata`=JSON |
+| `Product` → `products` | `prod_id` | n/a | **no `name` column** — see gotcha |
+| `SubscriptionInactivationMenu` → `subscription_inactivation_menus` | `id` | n/a | cancel-reason lookup (tree via `parent_id`) |
+| `ProductFee` → `product_fees` | `id` | n/a | fee catalog (optional, for fee adjustments) |
+| `ProductComponent` → `products_component` | `id` | n/a | SoftDeletes (`deleted_at`); component line items |
+| `SubscriptionDeleted` → `subscriptions_deleted` | `id` | ON | deleted-subscription mirror (optional) |
+
+### Gotchas (read before building)
+- **`orders.cart` is PHP-`serialize()`d** (text, NOT JSON). Order View line
+  items require an `unserialize()` accessor (mirror legacy `BaseOrder`).
+- **`orders` has no status/cancelled column.** Legacy "cancel" moves the row to
+  `orders_deleted` (not imported). There **is** an `orders.reason` varchar(255)
+  column. v1 order-cancel must either (a) import `orders_deleted` and mirror the
+  move, or (b) store a cancel flag in `metadata` + populate `reason`. **Open.**
+- **`products` has no human name.** Display name comes from
+  `products_component.name` or `products_international.*` — `products` only
+  carries `prod_id`, `brand`, `plan_type`, `major_group`, intervals, finance
+  flags. The Subscription/Order "product" label must resolve via a component/
+  international join, not a `products.name`.
+- **Subscription sentinel dates**: `next_shipment`, `date_started`, `date_saved`,
+  `date_winback` are `NOT NULL` and use `'0000-00-00'`; normalize to null.
+- **`subscriptions.cancel_reason` is `int(11)`** → FK to
+  `subscription_inactivation_menus.id` (not free text).
+
+---
+
+### `orders`
+
+PK `id`. No timestamp columns. ~1.9M rows.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | int(11) | NO | — | **PK** |
+| `date_added` | datetime | NO | — | order created |
+| `date_shipped` | date | NO | — | |
+| `date_paid` | date | YES | NULL | |
+| `date_purchased` | date | YES | NULL | |
+| `url` | varchar(125) | YES | NULL | |
+| `by_user` | int(11) | NO | — | FK → `customer_profile.to_user` (customer) |
+| `campaign_id` | int(11) | YES | NULL | |
+| `cart` | text | NO | — | **PHP-serialized** line items |
+| `metadata` | longtext | YES | NULL | JSON |
+| `has_prod` | tinyint(1) | NO | — | |
+| `has_pack` | tinyint(1) | NO | — | |
+| `vat_rate` | decimal(11,2) | YES | 0.00 | |
+| `total` | decimal(11,2) | NO | — | |
+| `total_vat` | decimal(11,2) | NO | — | |
+| `total_excluding_vat` | decimal(11,2) | YES | NULL | |
+| `total_with_coupon` | decimal(11,2) | NO | — | |
+| `coupon` | varchar(255) | NO | '' | |
+| `payment_method` | enum('faktura','kort') | YES | NULL | |
+| `is_processed` | tinyint(1) | NO | 0 | payment/fulfilment status |
+| `is_shipped` | tinyint(1) | NO | 0 | |
+| `is_paid` | tinyint(1) | YES | 0 | |
+| `ref` / `ref1` / `ref2` | varchar(255) | NO | '' | |
+| `ip` | varchar(15) | YES | '' | |
+| `prod_id` | int(11) | NO | — | FK → `products.prod_id` |
+| `invoice_no` | varchar(20) | NO | '' | |
+| `sub_account_no` | varchar(100) | YES | NULL | |
+| `subscription_id` | int(11) | YES | NULL | FK → `subscriptions.id` |
+| `gothia_account` | int(11) | YES | NULL | invoice partner ledger |
+| `origin` | varchar(255) | YES | NULL | |
+| `region_code` | char(2) | NO | 'SE' | |
+| `ipartner` | varchar(255) | YES | NULL | |
+| `company_name` | enum('sgb','slp') | YES | 'sgb' | |
+| `shipment_center` | enum('SE','EE','PL','HK') | YES | 'PL' | shipment info |
+| `audiofile_id` | varchar(255) | YES | NULL | |
+| `partner` | enum('monitum','defentry') | YES | NULL | |
+| `partner_sent` | tinyint(1) | NO | 0 | |
+| `parcel_tracking_id` | varchar(30) | YES | NULL | shipment tracking |
+| `reason` | varchar(255) | YES | NULL | **usable for cancel reason** |
+| `is_pre_financed` | tinyint(1) | NO | 0 | |
+| `is_pre_generated` | tinyint(1) | NO | 0 | |
+| `event_processed_at` | datetime | YES | NULL | |
+| `batch` | varchar(50) | YES | NULL | |
+
+### `subscriptions`
+
+PK `id`. Has `created_at`/`updated_at`. ~400K rows.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | int(11) | NO | — | **PK** |
+| `user_id` | int(11) | NO | — | FK → `customer_profile.to_user` |
+| `active` | tinyint(4) | NO | — | 1=active, 0=inactive (status) |
+| `cancel_method` | varchar(255) | YES | NULL | |
+| `cancel_category` | varchar(255) | YES | NULL | |
+| `cancel_reception` | varchar(64) | YES | NULL | |
+| `cancel_reason` | int(11) | YES | NULL | FK → `subscription_inactivation_menus.id` |
+| `i` | int(11) | NO | — | interval counter |
+| `payment_type` | enum('faktura','kort') | YES | NULL | |
+| `remote_id` | int(11) | YES | NULL | base order id |
+| `subscription_id` | int(11) | NO | 0 | FK → `products.prod_id` (the product) |
+| `next_shipment` | date | NO | — | sentinel `'0000-00-00'` |
+| `date_started` | date | NO | — | sentinel |
+| `date_cancelled` | date | YES | NULL | |
+| `date_churned` | date | YES | NULL | |
+| `date_inactivated` | date | YES | NULL | |
+| `date_restart` | date | YES | NULL | |
+| `date_saved` | date | NO | — | sentinel |
+| `date_winback` | date | NO | — | sentinel |
+| `save_type` | enum('full','pause','price','commitment') | YES | NULL | |
+| `wb_type` | enum('full','pause','price','commitment') | YES | NULL | |
+| `send_gift` | int(2) | NO | 0 | |
+| `ref` | varchar(32) | NO | '' | |
+| `ref1` / `ref2` | varchar(65) | NO | '' | |
+| `bounces` | int(11) | YES | 0 | |
+| `send_premie` | tinyint(3) unsigned | YES | 0 | |
+| `return_date` | timestamp | YES | NULL | |
+| `post_binding_price` | decimal(11,2) | YES | NULL | |
+| `final_invoice` | date | YES | NULL | |
+| `ipartner` | varchar(255) | YES | NULL | |
+| `exported` | tinyint(3) | NO | 0 | |
+| `exported_on` | date | YES | NULL | |
+| `is_pre_financed` | int(11) | NO | 0 | **pre-finance flag** |
+| `pre_finance_count` | int(11) | NO | 0 | **pre-finance count** |
+| `pre_generated_orders` | int(11) | NO | 0 | |
+| `batch` | varchar(50) | YES | NULL | |
+| `created_at` | datetime | YES | current_timestamp() | |
+| `updated_at` | datetime | YES | current_timestamp() | |
+
+### `order_adjustments`
+
+PK `id`. `created_at` only (no `updated_at`). ~65K rows.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | int(11) | NO | — | **PK** |
+| `order_id` | int(11) | YES | NULL | FK → `orders.id` |
+| `type` | varchar(100) | YES | NULL | fee / discount / … |
+| `metadata` | longtext | YES | NULL | JSON: holds `cart` + `adj_total` |
+| `comment` | longtext | YES | NULL | |
+| `origin` | varchar(100) | YES | NULL | `manual` / `manual_added_fee` / `manual_remove_fee` |
+| `initiator` | int(11) | YES | NULL | FK → `users.id` (null until auth) |
+| `created_at` | timestamp | YES | NULL | |
+| `orig_origin_temp` | varchar(70) | YES | NULL | |
+
+### `subscription_inactivation_menus`
+
+PK `id`. Cancel-reason lookup (hierarchical via `parent_id`). 390 rows.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | int(11) | NO | — | **PK** |
+| `parent_id` | int(11) | YES | NULL | self-ref (tree) |
+| `level` | int(11) | NO | — | depth |
+| `sequence` | int(11) | NO | — | order |
+| `name` | varchar(100) | NO | — | display label |
+| `status` | int(11) | NO | 1 | 1=active |
+| `type` | enum('channel','action','category','reason','detail') | YES | NULL | node type |
+
+### `products`
+
+PK `prod_id`. **No `name` column** — resolve display name via
+`products_component.name` / `products_international`. ~15K rows.
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `prod_id` | int(11) | NO | — | **PK** |
+| `time` | int(11) | NO | 0 | commitment length |
+| `intervall` | int(5) | NO | 30 | refill interval days |
+| `supply_type` | enum('even','upfront') | YES | NULL | |
+| `supply_start` | enum('starter_kit','second_package') | NO | 'second_package' | |
+| `plan_type` | enum('id-protect-single','-duo','-family','-business') | YES | NULL | |
+| `regret_period` | int(11) | YES | NULL | |
+| `second_package` | int(5) | NO | 30 | |
+| `brand` | enum('grace','shave','dentally','generic','dentle','vialina','zuave','nordicshave','borsta','sinfrid') | YES | NULL | |
+| `major_group` | enum('startpackage','rebill','single','fee','installment') | YES | NULL | |
+| `cancellation_period` | int(11) | YES | NULL | |
+| `is_pre_financed` | int(1) | NO | 0 | |
+| `pre_finance_count` | int(11) | NO | 0 | |
+| `pre_generated_orders` | int(11) | NO | 0 | |
+| `remote_id` | varchar(25) | YES | NULL | |
+
+> (Other columns exist: `antal_kollin`, `multiplier`, `can_be_first`,
+> `has_subscription`, `additional_samples`, `is_extension`, `sub_product`,
+> `auto_terminate_after_orders`, `auto_post_price_after_rebills`,
+> `year_offer_holder`, `is_winback_product`, `base_contract_inheritance`,
+> `is_excl_vat`, `note`. Not needed for this suite.)
+
+### `product_fees` (optional — fee-catalog adjustments)
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | int(11) | NO | — | **PK** |
+| `product_id` | int(255) | NO | — | FK → `products.prod_id` |
+| `fee_id` | int(255) | NO | — | the fee product |
+| `type` | enum('invoice','credit_card','shipping','postage','bundle','other') | NO | 'invoice' | |
+| `is_second_package` | tinyint(1) | NO | 0 | |
+
+### `products_component` (optional — component line items)
+
+SoftDeletes (`deleted_at`).
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | int(10) unsigned | NO | — | **PK** |
+| `prod_id` | int(11) | YES | NULL | FK → `products.prod_id` |
+| `component_id` | int(11) | YES | NULL | |
+| `second_package_component_id` | int(11) | YES | NULL | |
+| `name` | text | NO | — | component display name |
+| `group` | enum('start_package','refill_normal','refill_special','refill_bundle','single','fee','other','installment','startpackage','rebill') | NO | — | |
+| `deleted_at` | datetime | YES | NULL | soft delete |
+
+### `subscriptions_deleted` (optional — deleted-subscription mirror)
+
+Mirror of `subscriptions` plus `date_deleted` (datetime, NOT NULL). Same PK `id`,
+has `created_at`/`updated_at`. Only needed for a deleted-subscriptions view
+(out of v1).

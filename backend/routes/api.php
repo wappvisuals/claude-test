@@ -5,10 +5,13 @@ use App\Http\Controllers\Api\BlockedSsnController;
 use App\Http\Controllers\Api\CustomerChangeController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerOrganizationController;
+use App\Http\Controllers\Api\CustomerStoreStatsController;
 use App\Http\Controllers\Api\GdprCustomerController;
 use App\Http\Controllers\Api\InsurancePolicyController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\SinfridAccountController;
+use App\Http\Controllers\Api\SubscriptionController;
 
 Route::get('/customers/search', [CustomerController::class, 'search']);
 
@@ -28,6 +31,18 @@ Route::post('/policies/{id}/cancel', [InsurancePolicyController::class, 'cancel'
 Route::post('/policies/{id}/sync-status', [InsurancePolicyController::class, 'syncStatus']);
 Route::delete('/policies/{id}', [InsurancePolicyController::class, 'destroy']);
 
+// Orders
+Route::get('/orders', [OrderController::class, 'index']);
+Route::get('/orders/{id}', [OrderController::class, 'show'])->where('id', '[0-9]+')->name('orders.show');
+Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel'])->where('id', '[0-9]+');
+Route::post('/orders/{id}/adjustments', [OrderController::class, 'addAdjustment'])->where('id', '[0-9]+');
+Route::delete('/orders/{id}/adjustments/{adjustmentId}', [OrderController::class, 'destroyAdjustment'])->where(['id' => '[0-9]+', 'adjustmentId' => '[0-9]+']);
+
+// Subscriptions
+Route::get('/subscriptions/{id}', [SubscriptionController::class, 'show'])->where('id', '[0-9]+');
+Route::patch('/subscriptions/{id}', [SubscriptionController::class, 'update'])->where('id', '[0-9]+');
+Route::post('/subscriptions/{id}/deactivate', [SubscriptionController::class, 'deactivate'])->where('id', '[0-9]+');
+
 // Sinfrid account (account-scoped)
 Route::get('/sinfrid-account/plans', [SinfridAccountController::class, 'plans']);
 Route::post('/sinfrid-account/{id}/family-members', [SinfridAccountController::class, 'addFamilyMember']);
@@ -40,6 +55,9 @@ Route::delete('/sinfrid-account/{id}', [SinfridAccountController::class, 'destro
 
 // Customer-scoped
 Route::get('/customers/{id}/changes', [CustomerChangeController::class, 'index'])->where('id', '[0-9]+');
+Route::get('/customers/{id}/store-stats', [CustomerStoreStatsController::class, 'show'])->where('id', '[0-9]+');
+Route::get('/customers/{id}/subscriptions', [SubscriptionController::class, 'indexForCustomer'])->where('id', '[0-9]+');
+Route::get('/customers/{id}/orders', [OrderController::class, 'indexForCustomer'])->where('id', '[0-9]+');
 Route::get('/customers/{id}/policies', [InsurancePolicyController::class, 'index'])->where('id', '[0-9]+');
 Route::post('/customers/{id}/policies', [InsurancePolicyController::class, 'store'])->where('id', '[0-9]+');
 Route::get('/customers/{id}/sinfrid-account', [SinfridAccountController::class, 'show'])->where('id', '[0-9]+');

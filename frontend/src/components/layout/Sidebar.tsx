@@ -1,5 +1,6 @@
-import { Users } from 'lucide-react'
+import { Users, ShoppingCart } from 'lucide-react'
 import { NavGroup } from './NavGroup'
+import { NavItem } from './NavItem'
 
 export function Sidebar() {
   return (
@@ -21,6 +22,7 @@ export function Sidebar() {
             { to: '/blocked-ssn', label: 'Blocked SSNs' },
           ]}
         />
+        <NavItem to="/orders" label="Orders" icon={<ShoppingCart size={16} />} />
       </nav>
     </aside>
   )

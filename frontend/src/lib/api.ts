@@ -19,6 +19,9 @@ import type {
 } from '@/types/gdpr'
 import type { CustomerChangeList, CustomerChangeListParams } from '@/types/customerChange'
 import type { InsurancePolicy, InsurancePolicyList } from '@/types/insurancePolicy'
+import type { Subscription, SubscriptionGroupList, CustomerSubscriptionParams } from '@/types/subscription'
+import type { Order, OrderList, OrderGroupList, OrderAdjustment, CustomerOrderParams } from '@/types/order'
+import type { CustomerStoreStats } from '@/types/storeStats'
 import type {
   SinfridAccount,
   SinfridAlarmList,
@@ -212,8 +215,8 @@ export async function createPolicy(
   return response.data.data
 }
 
-export async function cancelPolicy(id: string, endDate: string): Promise<InsurancePolicy> {
-  const response = await http.post<{ data: InsurancePolicy }>(`/policies/${id}/cancel`, { endDate })
+export async function cancelPolicy(id: string, endDate: string, reason: string): Promise<InsurancePolicy> {
+  const response = await http.post<{ data: InsurancePolicy }>(`/policies/${id}/cancel`, { endDate, reason })
   return response.data.data
 }
 
@@ -224,6 +227,89 @@ export async function syncPolicyStatus(id: string): Promise<InsurancePolicy> {
 
 export async function deletePolicy(id: string): Promise<void> {
   await http.delete(`/policies/${id}`)
+}
+
+// ─── Subscriptions ────────────────────────────────────────────────────────────
+
+export async function fetchCustomerSubscriptions(
+  customerId: number,
+  params: CustomerSubscriptionParams = {}
+): Promise<SubscriptionGroupList> {
+  const response = await http.get<SubscriptionGroupList>(`/customers/${customerId}/subscriptions`, {
+    params: buildParams(params as Record<string, unknown>),
+  })
+  return response.data
+}
+
+export async function fetchSubscription(id: number): Promise<Subscription> {
+  const response = await http.get<{ data: Subscription }>(`/subscriptions/${id}`)
+  return response.data.data
+}
+
+export async function updateSubscription(id: number, nextShipment: string): Promise<Subscription> {
+  const response = await http.patch<{ data: Subscription }>(`/subscriptions/${id}`, { next_shipment: nextShipment })
+  return response.data.data
+}
+
+export async function deactivateSubscription(
+  id: number,
+  payload: { reason_id?: number; method?: string }
+): Promise<Subscription> {
+  const response = await http.post<{ data: Subscription }>(`/subscriptions/${id}/deactivate`, payload)
+  return response.data.data
+}
+
+// ─── Store stats (profile cards) ───────────────────────────────────────────────
+
+export async function fetchCustomerStoreStats(customerId: number): Promise<CustomerStoreStats> {
+  const response = await http.get<{ data: CustomerStoreStats }>(`/customers/${customerId}/store-stats`)
+  return response.data.data
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+export async function fetchCustomerOrders(
+  customerId: number,
+  params: CustomerOrderParams = {}
+): Promise<OrderGroupList> {
+  const response = await http.get<OrderGroupList>(`/customers/${customerId}/orders`, {
+    params: buildParams(params as Record<string, unknown>),
+  })
+  return response.data
+}
+
+export async function fetchOrders(params: Record<string, unknown> = {}): Promise<OrderList> {
+  const response = await http.get<OrderList>('/orders', { params: buildParams(params) })
+  return response.data
+}
+
+export async function fetchOrder(id: number): Promise<Order> {
+  const response = await http.get<{ data: Order }>(`/orders/${id}`)
+  return response.data.data
+}
+
+export async function cancelOrder(id: number, reason: string): Promise<Order> {
+  const response = await http.post<{ data: Order }>(`/orders/${id}/cancel`, { reason })
+  return response.data.data
+}
+
+export async function addOrderAdjustment(
+  id: number,
+  payload: {
+    type: 'fee' | 'discount'
+    amount: number
+    comment?: string
+    rowid?: string | null
+    prod_id?: number | string | null
+    product_name?: string | null
+  }
+): Promise<OrderAdjustment> {
+  const response = await http.post<{ data: OrderAdjustment }>(`/orders/${id}/adjustments`, payload)
+  return response.data.data
+}
+
+export async function deleteOrderAdjustment(orderId: number, adjustmentId: number): Promise<void> {
+  await http.delete(`/orders/${orderId}/adjustments/${adjustmentId}`)
 }
 
 // ─── Sinfrid Account ──────────────────────────────────────────────────────────

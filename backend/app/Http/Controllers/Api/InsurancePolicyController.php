@@ -42,6 +42,7 @@ class InsurancePolicyController extends Controller
     {
         $validated = $request->validate([
             'endDate' => 'required|date_format:Y-m-d',
+            'reason' => 'required|string|max:1000',
         ]);
 
         return $this->run(fn () => new InsurancePolicyResource(

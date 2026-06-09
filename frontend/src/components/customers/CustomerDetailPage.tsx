@@ -89,7 +89,7 @@ export function CustomerDetailPage() {
           onBlockChange={handleBlockChange}
         />
         <CustomerProfileStats customer={customer} />
-        <CustomerProfileCenter />
+        <CustomerProfileCenter customerId={Number(id)} />
       </div>
     </div>
   )

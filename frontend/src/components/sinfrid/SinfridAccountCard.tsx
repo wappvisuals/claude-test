@@ -31,9 +31,9 @@ function severityTone(sev: string | null): string {
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-[10px] uppercase tracking-wide text-gray-400">{label}</p>
-      <p className="text-[13px] font-medium text-[#1A1A2E]">{value ?? <span className="text-gray-300">—</span>}</p>
+      <p className="text-[13px] font-medium text-[#1A1A2E] break-words">{value ?? <span className="text-gray-300">—</span>}</p>
     </div>
   )
 }
@@ -166,10 +166,10 @@ export function SinfridAccountCard({ customerId }: { customerId: number }) {
         <Stat label="Name" value={[account.first_name, account.last_name].filter(Boolean).join(' ') || null} />
         <Stat label="Email" value={account.email} />
         <Stat label="Phone" value={account.phone} />
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-wide text-gray-400">Plan</p>
           <div className="flex items-center gap-2">
-            <p className="text-[13px] font-medium text-[#1A1A2E]">{account.plan_name || '—'}</p>
+            <p className="text-[13px] font-medium text-[#1A1A2E] break-words">{account.plan_name || '—'}</p>
             <button onClick={() => setPlanOpen(true)} className="text-[11px] font-medium text-[#00C48C] hover:underline">
               Change
             </button>
@@ -250,7 +250,7 @@ export function SinfridAccountCard({ customerId }: { customerId: number }) {
           ) : (
             <ul className="flex flex-col gap-1.5">
               {activities.map((act, i) => (
-                <li key={i} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2 text-sm">
+                <li key={i} className="flex flex-col gap-0.5 rounded-lg border border-gray-100 px-3 py-2 text-sm">
                   <span className="text-gray-700">{act.label}</span>
                   <span className="text-xs text-gray-400">{act.date ?? '—'}</span>
                 </li>
