@@ -296,8 +296,8 @@ export async function cancelOrder(id: number, reason: string): Promise<Order> {
 export async function addOrderAdjustment(
   id: number,
   payload: {
-    type: 'fee' | 'discount'
-    amount: number
+    old_price: number
+    new_price: number
     comment?: string
     rowid?: string | null
     prod_id?: number | string | null

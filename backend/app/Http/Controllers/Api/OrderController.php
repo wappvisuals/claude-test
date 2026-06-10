@@ -56,8 +56,8 @@ class OrderController extends Controller
     public function addAdjustment(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
-            'type' => 'required|in:fee,discount',
-            'amount' => 'required|numeric|min:0',
+            'old_price' => 'required|numeric|min:0',
+            'new_price' => 'required|numeric|min:0',
             'comment' => 'nullable|string|max:1000',
             'rowid' => 'nullable|string|max:64',
             'prod_id' => 'nullable',

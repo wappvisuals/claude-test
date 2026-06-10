@@ -5,12 +5,15 @@ export interface OrderAdjustment {
   order_id: number
   type: string
   adj_total: number | null
+  old_price: number | null
+  new_price: number | null
   rowid: string | null
   prod_id: number | string | null
   product_name: string | null
   comment: string | null
   origin: string | null
   initiator: number | null
+  initiator_name: string | null
   created_at: string | null
 }
 
@@ -35,6 +38,7 @@ export interface Order {
   date_shipped: string | null
   date_paid: string | null
   total: number
+  adjusted_total?: number
   total_vat: number
   vat_rate: string | null
   payment_method: string | null

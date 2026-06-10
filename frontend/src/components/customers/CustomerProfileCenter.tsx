@@ -18,7 +18,7 @@ const fmtMoney = (v: number | null | undefined) =>
 const cell = 'px-4 py-3 text-[13px] text-[#1A1A2E] whitespace-nowrap'
 
 // Brand filter options (products.brand enum) — "All" clears the filter.
-const BRANDS = ['All', 'grace', 'dentle', 'sinfrid', 'zuave', 'vialina', 'shave', 'generic', 'dentally', 'nordicshave', 'borsta']
+const BRANDS = ['All', 'grace', 'sinfrid', 'dentle', 'zuave']
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 // Small circular brand badge shown on each product group header.
@@ -346,13 +346,14 @@ function OrdersContent({ customerId }: { customerId: number }) {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('Approved')
   const [brand, setBrand] = useState('All')
+  const [status, setStatus] = useState<'approved' | 'cancelled' | 'all'>('approved')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const toggle = (key: string) => setCollapsed(prev => {
     const next = new Set(prev)
     next.has(key) ? next.delete(key) : next.add(key)
     return next
   })
-  const { data, loading, error } = useCustomerOrders(customerId, { brand })
+  const { data, loading, error } = useCustomerOrders(customerId, { brand, status })
   const groups = data?.data ?? []
   const itemCount = groups.reduce((n, g) => n + g.items.length, 0)
 
@@ -370,6 +371,18 @@ function OrdersContent({ customerId }: { customerId: number }) {
             Add Order
           </button>
           <BrandSelect value={brand} onChange={setBrand} />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[12px] text-gray-400 whitespace-nowrap">Status</span>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value as 'approved' | 'cancelled' | 'all')}
+              className="text-[12px] border border-[#EBEBF5] rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-[#00C48C] text-[#1A1A2E]"
+            >
+              <option value="approved">Approved</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="all">All</option>
+            </select>
+          </div>
         </div>
         <SectionFilterTabs
           tabs={['Approved', 'Removed', 'Rejected']}

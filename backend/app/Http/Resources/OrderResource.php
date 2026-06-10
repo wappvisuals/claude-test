@@ -26,6 +26,10 @@ class OrderResource extends JsonResource
             'date_shipped' => $this->date($this->date_shipped),
             'date_paid' => $this->date($this->date_paid),
             'total' => (float) $this->total,
+            'adjusted_total' => $this->when(
+                $this->relationLoaded('adjustments'),
+                fn () => round((float) $this->total + $this->adjustments->sum(fn ($a) => (float) data_get($a->metadata, 'adj_total', 0)), 2)
+            ),
             'total_vat' => (float) $this->total_vat,
             'vat_rate' => $this->vat_rate,
             'payment_method' => $this->payment_method,

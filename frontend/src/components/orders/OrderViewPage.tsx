@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Mail, RefreshCw, Pencil, Trash2, Ban } from 'lucide-react'
+import { ArrowLeft, Mail, RefreshCw, Pencil, Trash2, Ban, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -33,13 +33,15 @@ export function OrderViewPage() {
 
   const [tab, setTab] = useState<'order' | 'logs'>('order')
   const [cancelOpen, setCancelOpen] = useState(false)
-  const [adjustFor, setAdjustFor] = useState<OrderLineItem | null>(null)
+  const [adjustTarget, setAdjustTarget] = useState<{ line: OrderLineItem; adjustment: OrderAdjustment | null } | null>(null)
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [toDeleteAdj, setToDeleteAdj] = useState<OrderAdjustment | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const lineItems = o?.line_items ?? []
   const adjustments = o?.adjustments ?? []
+  const adjustedTotal = o?.adjusted_total ?? o?.total ?? 0
+  const totalChanged = o != null && Math.abs(adjustedTotal - o.total) > 0.001
 
   const adjustmentsFor = (item: OrderLineItem, idx: number): OrderAdjustment[] => {
     const key = item.rowid ?? `idx-${idx}`
@@ -50,9 +52,9 @@ export function OrderViewPage() {
     )
   }
 
-  function openAdjust(item: OrderLineItem) {
+  function openAdjust(item: OrderLineItem, adjustment: OrderAdjustment | null) {
     setActionError(null)
-    setAdjustFor(item)
+    setAdjustTarget({ line: item, adjustment })
     setAdjustOpen(true)
   }
 
@@ -119,7 +121,12 @@ export function OrderViewPage() {
                 <Detail label="Order No." value={o.id} />
                 <Detail label="Shipping date" value={fmtDate(o.date_shipped)} />
                 <Detail label="IP No." value={o.ip} />
-                <Detail label="Total Amount" value={money(o.total)} />
+                <Detail
+                  label="Total Amount"
+                  value={totalChanged
+                    ? <span className="flex items-center gap-1.5"><span className="text-gray-400 line-through">{money(o.total)}</span><span className="font-medium">{money(adjustedTotal)}</span></span>
+                    : money(o.total)}
+                />
 
                 <Detail label="Invoice No." value={o.invoice_no} />
                 <Detail label="Date Paid" value={o.date_paid ? fmtDate(o.date_paid) : <span className="text-gray-400">Not paid yet</span>} />
@@ -170,7 +177,7 @@ export function OrderViewPage() {
                   ) : (
                     lineItems.map((item, idx) => {
                       const key = item.rowid ?? `idx-${idx}`
-                      const lineAdj = adjustmentsFor(item, idx)
+                      const adj = adjustmentsFor(item, idx)[0] ?? null
                       return (
                           <tbody key={key}>
                             <tr className="border-t border-[#F0F1F7]">
@@ -184,43 +191,42 @@ export function OrderViewPage() {
                               </td>
                               <td className="px-2 py-3.5 text-[13px] text-[#1A1A2E]">{item.name ?? '—'}</td>
                               <td className="px-2 py-3.5 text-[13px] text-[#1A1A2E]">{item.qty ?? '—'}</td>
-                              <td className="px-5 py-3.5 text-[13px] text-[#1A1A2E]">{item.price ?? '—'}</td>
+                              <td className="px-5 py-3.5 text-[13px] text-[#1A1A2E]">
+                                {adj && adj.new_price !== null
+                                  ? <span className="flex items-center gap-1.5"><span className="text-gray-400 line-through">{item.price ?? '—'}</span><span className="font-medium">{adj.new_price}</span></span>
+                                  : (item.price ?? '—')}
+                              </td>
                             </tr>
 
                             {/* Adjustment sub-row */}
                             <tr className="border-b border-dashed border-[#EBEBF5]">
                               <td colSpan={4} className="px-5 py-3">
                                 <div className="flex items-center justify-between gap-4">
-                                  {lineAdj.length === 0 ? (
-                                    <span className="text-[13px] text-gray-400">No Adjustment</span>
-                                  ) : (
-                                    <div className="flex flex-col gap-1">
-                                      {lineAdj.map(a => (
-                                        <div key={a.id} className="flex items-center gap-2 text-[13px]">
-                                          <span className="font-medium capitalize text-gray-700">{a.type}</span>
-                                          <span className={a.adj_total !== null && a.adj_total < 0 ? 'text-[#E5484D]' : 'text-[#00A876]'}>{money(a.adj_total)}</span>
-                                          {a.comment && <span className="text-gray-400">· {a.comment}</span>}
-                                          <button onClick={() => { setActionError(null); setToDeleteAdj(a) }} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600" title="Delete adjustment">
-                                            <Trash2 size={14} />
-                                          </button>
-                                        </div>
-                                      ))}
+                                  {adj ? (
+                                    <div className="flex flex-wrap items-center gap-2 text-[13px]">
+                                      <span className="size-1.5 rounded-full bg-gray-300" />
+                                      <span className="text-gray-700">Price adjusted from {adj.old_price} to {adj.new_price}</span>
+                                      {adj.comment && <span className="italic text-gray-400">{adj.comment}</span>}
+                                      <span className="flex items-center gap-1 text-gray-500">
+                                        <User size={13} /> {adj.initiator_name ?? 'System'}
+                                      </span>
                                     </div>
+                                  ) : (
+                                    <span className="text-[13px] text-gray-400">No Adjustment</span>
                                   )}
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => openAdjust(item)} className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#00A876]" title="Add adjustment">
+                                  <div className="flex items-center gap-2">
+                                    {adj?.created_at && <span className="text-[12px] text-gray-300">{adj.created_at.slice(0, 19).replace('T', ' ')}</span>}
+                                    <button onClick={() => openAdjust(item, adj)} className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#00A876]" title={adj ? 'Edit adjustment' : 'Adjust price'}>
                                       <Pencil size={15} />
                                     </button>
-                                    {!o.is_cancelled && (
-                                      <button
-                                        onClick={() => lineAdj[0] && (setActionError(null), setToDeleteAdj(lineAdj[0]))}
-                                        disabled={lineAdj.length === 0}
-                                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
-                                        title="Delete adjustment"
-                                      >
-                                        <Trash2 size={15} />
-                                      </button>
-                                    )}
+                                    <button
+                                      onClick={() => adj && (setActionError(null), setToDeleteAdj(adj))}
+                                      disabled={!adj}
+                                      className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
+                                      title="Delete adjustment"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
                                   </div>
                                 </div>
                               </td>
@@ -239,7 +245,19 @@ export function OrderViewPage() {
       {o && (
         <>
           <OrderCancelDialog open={cancelOpen} onOpenChange={setCancelOpen} orderId={orderId} onCancelled={refetch} />
-          <OrderAdjustmentDialog open={adjustOpen} onOpenChange={setAdjustOpen} orderId={orderId} line={adjustFor} onAdded={refetch} />
+          <OrderAdjustmentDialog
+            open={adjustOpen}
+            onOpenChange={setAdjustOpen}
+            orderId={orderId}
+            line={adjustTarget ? {
+              rowid: adjustTarget.line.rowid,
+              prod_id: adjustTarget.line.prod_id,
+              name: adjustTarget.line.name,
+              price: Number(adjustTarget.line.price) || 0,
+            } : null}
+            adjustment={adjustTarget?.adjustment ?? null}
+            onSaved={refetch}
+          />
           <ConfirmDialog
             open={toDeleteAdj !== null}
             onOpenChange={(o) => !o && setToDeleteAdj(null)}
