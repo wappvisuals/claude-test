@@ -51,6 +51,7 @@ export interface SubscriptionGroupItem {
   reference: string | null
   cancel_method: string | null
   cancel_reason: string | null
+  final_invoice: string | null
   is_pre_financed: boolean
   pre_finance_count: number
   sequence: number | null

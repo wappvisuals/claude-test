@@ -12,9 +12,7 @@ use RuntimeException;
 
 class InsurancePolicyController extends Controller
 {
-    public function __construct(private readonly InsurancePolicyService $service)
-    {
-    }
+    public function __construct(private readonly InsurancePolicyService $service) {}
 
     public function index(Request $request, int $id): AnonymousResourceCollection|JsonResponse
     {

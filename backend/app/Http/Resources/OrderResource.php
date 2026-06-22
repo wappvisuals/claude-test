@@ -49,6 +49,11 @@ class OrderResource extends JsonResource
             'partner' => $this->partner,
             'parcel_tracking_id' => $this->parcel_tracking_id,
             'reason' => $this->reason,
+            'returned' => (bool) data_get($this->metadata, 'returned', false),
+            'return_type' => data_get($this->metadata, 'return_type'),
+            'notes' => data_get($this->metadata, 'notes', []),
+            'refunds' => data_get($this->metadata, 'refunds', []),
+            'confirmation_sent_at' => data_get($this->metadata, 'confirmation_sent_at'),
             'metadata' => $this->metadata,
             // Normalized line items (detail endpoint only — cart can be a keyed object).
             'line_items' => $this->when($request->routeIs('orders.show'), fn () => $this->normalizedLineItems()),

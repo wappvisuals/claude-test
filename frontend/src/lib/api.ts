@@ -22,6 +22,10 @@ import type { InsurancePolicy, InsurancePolicyList } from '@/types/insurancePoli
 import type { Subscription, SubscriptionGroupList, CustomerSubscriptionParams } from '@/types/subscription'
 import type { Order, OrderList, OrderGroupList, OrderAdjustment, CustomerOrderParams } from '@/types/order'
 import type { CustomerStoreStats } from '@/types/storeStats'
+import type { Invoice, InvoiceList, InvoiceReminderList } from '@/types/invoice'
+import type { Payment, PaymentList } from '@/types/payment'
+import type { FutureOrderJob, FutureOrderJobList } from '@/types/futureOrder'
+import type { EventLogList } from '@/types/eventLog'
 import type {
   SinfridAccount,
   SinfridAlarmList,
@@ -310,6 +314,117 @@ export async function addOrderAdjustment(
 
 export async function deleteOrderAdjustment(orderId: number, adjustmentId: number): Promise<void> {
   await http.delete(`/orders/${orderId}/adjustments/${adjustmentId}`)
+}
+
+// ─── Order actions (continued) ──────────────────────────────────────────────
+
+export async function refundOrder(
+  id: number,
+  payload: { mode: 'full' | 'partial'; reason?: string; lines?: Array<{ rowid?: string | null; prod_id?: number | string | null; amount: number }> }
+): Promise<Order> {
+  const response = await http.post<{ data: Order }>(`/orders/${id}/refund`, payload)
+  return response.data.data
+}
+
+export async function setOrderReturn(id: number, action: 'set' | 'unset', type?: string): Promise<Order> {
+  const response = await http.patch<{ data: Order }>(`/orders/${id}/return/${action}`, { type })
+  return response.data.data
+}
+
+export async function resendOrderConfirmation(id: number): Promise<Order> {
+  const response = await http.post<{ data: Order }>(`/orders/${id}/resend-confirmation`)
+  return response.data.data
+}
+
+export async function addOrderNote(id: number, text: string): Promise<Order> {
+  const response = await http.post<{ data: Order }>(`/orders/${id}/notes`, { text })
+  return response.data.data
+}
+
+// ─── Invoices ─────────────────────────────────────────────────────────────────
+
+export async function fetchOrderInvoices(orderId: number): Promise<InvoiceList> {
+  const response = await http.get<InvoiceList>(`/orders/${orderId}/invoices`)
+  return response.data
+}
+
+export async function fetchInvoice(id: number): Promise<Invoice> {
+  const response = await http.get<{ data: Invoice }>(`/invoices/${id}`)
+  return response.data.data
+}
+
+export async function updateInvoiceDueDate(id: number, dueDate: string): Promise<Invoice> {
+  const response = await http.post<{ data: Invoice }>(`/invoices/${id}/due-date`, { due_date: dueDate })
+  return response.data.data
+}
+
+export async function regenerateInvoicePaymentLink(id: number): Promise<Invoice> {
+  const response = await http.post<{ data: Invoice }>(`/invoices/${id}/payment-link`)
+  return response.data.data
+}
+
+export async function fetchInvoiceReminders(id: number): Promise<InvoiceReminderList> {
+  const response = await http.get<InvoiceReminderList>(`/invoices/${id}/reminders`)
+  return response.data
+}
+
+// ─── Payments ─────────────────────────────────────────────────────────────────
+
+export async function fetchInvoicePayments(invoiceId: number): Promise<PaymentList> {
+  const response = await http.get<PaymentList>(`/invoices/${invoiceId}/payments`)
+  return response.data
+}
+
+export async function addInvoicePayment(
+  invoiceId: number,
+  payload: { sum: number; date?: string; reference?: string; payer_name?: string }
+): Promise<Payment> {
+  const response = await http.post<{ data: Payment }>(`/invoices/${invoiceId}/payments`, payload)
+  return response.data.data
+}
+
+// ─── Subscription actions (continued) ─────────────────────────────────────────
+
+export async function reactivateSubscription(id: number): Promise<Subscription> {
+  const response = await http.post<{ data: Subscription }>(`/subscriptions/${id}/reactivate`)
+  return response.data.data
+}
+
+export async function setSubscriptionFinalInvoice(id: number, action: 'set' | 'unset', date?: string): Promise<Subscription> {
+  const response = await http.post<{ data: Subscription }>(`/subscriptions/${id}/final-invoice/${action}`, { date })
+  return response.data.data
+}
+
+export async function fetchSubscriptionEventLog(id: number): Promise<EventLogList> {
+  const response = await http.get<EventLogList>(`/subscriptions/${id}/event-log`)
+  return response.data
+}
+
+// ─── Future orders ────────────────────────────────────────────────────────────
+
+export async function fetchFutureOrders(subscriptionId: number): Promise<FutureOrderJobList> {
+  const response = await http.get<FutureOrderJobList>(`/subscriptions/${subscriptionId}/future-orders`)
+  return response.data
+}
+
+export async function generateFutureOrders(subscriptionId: number): Promise<FutureOrderJobList> {
+  const response = await http.post<FutureOrderJobList>(`/subscriptions/${subscriptionId}/future-orders/generate`)
+  return response.data
+}
+
+export async function rescheduleFutureOrder(jobId: number, executeAt: string): Promise<FutureOrderJob> {
+  const response = await http.patch<{ data: FutureOrderJob }>(`/future-orders/${jobId}`, { execute_at: executeAt })
+  return response.data.data
+}
+
+export async function skipFutureOrder(jobId: number): Promise<FutureOrderJob> {
+  const response = await http.post<{ data: FutureOrderJob }>(`/future-orders/${jobId}/skip`)
+  return response.data.data
+}
+
+export async function cancelFutureOrder(jobId: number): Promise<FutureOrderJob> {
+  const response = await http.delete<{ data: FutureOrderJob }>(`/future-orders/${jobId}`)
+  return response.data.data
 }
 
 // ─── Sinfrid Account ──────────────────────────────────────────────────────────

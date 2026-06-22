@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Mail, RefreshCw, Pencil, Trash2, Ban, User } from 'lucide-react'
+import { ArrowLeft, Mail, RefreshCw, Pencil, Trash2, Ban, User, Undo2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useOrder } from '@/hooks/useOrder'
-import { deleteOrderAdjustment, getErrorMessage } from '@/lib/api'
+import { deleteOrderAdjustment, resendOrderConfirmation, setOrderReturn, getErrorMessage } from '@/lib/api'
 import { OrderCancelDialog } from './OrderCancelDialog'
 import { OrderAdjustmentDialog } from './OrderAdjustmentDialog'
+import { OrderRefundDialog } from './OrderRefundDialog'
+import { OrderNotesPanel } from './OrderNotesPanel'
+import { InvoicesPanel } from '@/components/invoices/InvoicesPanel'
 import type { OrderAdjustment, OrderLineItem } from '@/types/order'
 
 const fmtDate = (v: string | null) => (v ? v.slice(0, 19).replace('T', ' ') : null)
@@ -36,6 +39,9 @@ export function OrderViewPage() {
   const [adjustTarget, setAdjustTarget] = useState<{ line: OrderLineItem; adjustment: OrderAdjustment | null } | null>(null)
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [toDeleteAdj, setToDeleteAdj] = useState<OrderAdjustment | null>(null)
+  const [refundOpen, setRefundOpen] = useState(false)
+  const [resendOpen, setResendOpen] = useState(false)
+  const [returnOpen, setReturnOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const lineItems = o?.line_items ?? []
@@ -98,12 +104,16 @@ export function OrderViewPage() {
               </button>
             </div>
             <div className="flex items-center gap-2 pb-2">
-              <span className="flex size-8 items-center justify-center rounded-full bg-blue-50 text-blue-500" title="Order confirmation (preview)">
+              <button onClick={() => setResendOpen(true)} className="flex size-8 items-center justify-center rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100" title="Resend confirmation email">
                 <Mail size={15} />
-              </span>
+              </button>
               <button onClick={refetch} className="flex size-8 items-center justify-center rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100" title="Refresh">
                 <RefreshCw size={15} />
               </button>
+              <Button variant="outline" size="sm" onClick={() => setReturnOpen(true)}>
+                {o.returned ? <><Undo2 size={14} /> Returned</> : <><RotateCcw size={14} /> Mark returned</>}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setRefundOpen(true)}>Refund</Button>
               {!o.is_cancelled && (
                 <Button variant="destructive" size="sm" onClick={() => setCancelOpen(true)}>
                   <Ban size={14} /> Cancel
@@ -243,8 +253,32 @@ export function OrderViewPage() {
       ) : null}
 
       {o && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <InvoicesPanel orderId={orderId} />
+          <OrderNotesPanel order={o} onChanged={refetch} />
+        </div>
+      )}
+
+      {o && (
         <>
           <OrderCancelDialog open={cancelOpen} onOpenChange={setCancelOpen} orderId={orderId} onCancelled={refetch} />
+          <OrderRefundDialog open={refundOpen} onOpenChange={setRefundOpen} orderId={orderId} total={o.total} lineItems={lineItems} onRefunded={refetch} />
+          <ConfirmDialog
+            open={resendOpen}
+            onOpenChange={setResendOpen}
+            title="Resend confirmation email?"
+            description="The order confirmation will be re-sent to the customer."
+            confirmLabel="Resend"
+            onConfirm={async () => { await resendOrderConfirmation(orderId); refetch() }}
+          />
+          <ConfirmDialog
+            open={returnOpen}
+            onOpenChange={setReturnOpen}
+            title={o.returned ? 'Unmark as returned?' : 'Mark order as returned?'}
+            description={o.returned ? 'This clears the returned state on the order.' : 'This flags the order as returned.'}
+            confirmLabel={o.returned ? 'Unmark' : 'Mark returned'}
+            onConfirm={async () => { await setOrderReturn(orderId, o.returned ? 'unset' : 'set', 'manual'); refetch() }}
+          />
           <OrderAdjustmentDialog
             open={adjustOpen}
             onOpenChange={setAdjustOpen}

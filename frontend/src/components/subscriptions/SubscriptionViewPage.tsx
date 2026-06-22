@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, RefreshCw, Pencil, Ban } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Pencil, Ban, Power, FileCheck2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useSubscription } from '@/hooks/useSubscription'
+import { reactivateSubscription } from '@/lib/api'
 import { SubscriptionEditDialog } from './SubscriptionEditDialog'
 import { SubscriptionDeactivateDialog } from './SubscriptionDeactivateDialog'
+import { FinalInvoiceDialog } from './FinalInvoiceDialog'
+import { SubscriptionEventLog } from './SubscriptionEventLog'
+import { FutureOrdersCard } from '@/components/future-orders/FutureOrdersCard'
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -23,6 +28,8 @@ export function SubscriptionViewPage() {
   const { subscription: s, loading, error, refetch } = useSubscription(subId)
   const [editOpen, setEditOpen] = useState(false)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
+  const [finalInvoiceOpen, setFinalInvoiceOpen] = useState(false)
+  const [reactivateOpen, setReactivateOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-5 p-6">
@@ -40,11 +47,18 @@ export function SubscriptionViewPage() {
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil size={14} /> Edit shipment
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setFinalInvoiceOpen(true)}>
+              <FileCheck2 size={14} /> Final invoice
+            </Button>
             {s.active ? (
               <Button variant="destructive" size="sm" onClick={() => setDeactivateOpen(true)}>
                 <Ban size={14} /> Deactivate
               </Button>
-            ) : null}
+            ) : (
+              <Button size="sm" onClick={() => setReactivateOpen(true)}>
+                <Power size={14} /> Reactivate
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -81,6 +95,13 @@ export function SubscriptionViewPage() {
       ) : null}
 
       {s && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <FutureOrdersCard subscriptionId={subId} />
+          <SubscriptionEventLog subscriptionId={subId} />
+        </div>
+      )}
+
+      {s && (
         <>
           <SubscriptionEditDialog
             open={editOpen}
@@ -94,6 +115,21 @@ export function SubscriptionViewPage() {
             onOpenChange={setDeactivateOpen}
             subscriptionId={subId}
             onDeactivated={refetch}
+          />
+          <FinalInvoiceDialog
+            open={finalInvoiceOpen}
+            onOpenChange={setFinalInvoiceOpen}
+            subscriptionId={subId}
+            current={s.final_invoice}
+            onSaved={refetch}
+          />
+          <ConfirmDialog
+            open={reactivateOpen}
+            onOpenChange={setReactivateOpen}
+            title="Reactivate subscription?"
+            description="This clears the cancellation and sets the subscription active again."
+            confirmLabel="Reactivate"
+            onConfirm={async () => { await reactivateSubscription(subId); refetch() }}
           />
         </>
       )}

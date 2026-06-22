@@ -393,3 +393,41 @@ SoftDeletes (`deleted_at`).
 Mirror of `subscriptions` plus `date_deleted` (datetime, NOT NULL). Same PK `id`,
 has `created_at`/`updated_at`. Only needed for a deleted-subscriptions view
 (out of v1).
+
+---
+
+## Billing & Fulfillment Tables
+
+Imported for the **billing-fulfillment-suite**. `invoices` pre-existed; the rest
+were imported from `gracewel_grace`. `future_order_jobs` is a NEW table created
+by migration (`2026_06_10_000000_create_future_order_jobs_table`) because the
+legacy worker `jobs` schema collides with Laravel's queue `jobs` table.
+
+### Eloquent binding cheatsheet
+
+| Model → table | PK | Notes |
+|---|---|---|
+| `Invoice` → `invoices` | `id` | `invoice_id` (varchar) == order id; `total`/`balance` float; `metadata` json |
+| `Payment` → `payments` | `id` | `sum` float; linked to invoice through `payment_results` |
+| `PaymentResult` → `payment_results` | `id` (unsigned) | `invoice_id` → `invoices.id`; `payment_id` → `payments.id` |
+| `CreditNote` → `credit_notes` | `id` (unsigned) | `status` enum(open,closed,refunded,partially_refund) |
+| `WorkflowLog` → `workflow_logs` | `id` | reminder history, by `customer_id`; `created_at` only |
+| `EventLog` → `event_log` | `id` | no timestamps (`date_added`); sub event log via `sub_id` |
+| `FutureOrderJob` → `future_order_jobs` | `id` | NEW; `subscription_id`, `status`, `payload` json, `execute_at` |
+
+### Key joins (verified against data)
+- **Invoice ↔ Order:** `invoices.invoice_id` = `orders.id` (the order id is the
+  invoice number). `Invoice::order()` and `listForOrder($orderId)` use this.
+- **Payments ↔ Invoice:** through `payment_results` —
+  `payment_results.invoice_id` = `invoices.id`, `payment_results.payment_id` =
+  `payments.id` (HasManyThrough). A manual payment writes a `payments` row +
+  matching `payment_results` row and decrements `invoices.balance`.
+- **Reminders:** `workflow_logs.customer_id` = `invoices.customer_id`.
+- **Event log:** `event_log.sub_id` = `subscriptions.id` (most rows are `sub_id=0`).
+
+### Notes
+- Order-level **refunds, internal notes, return state, resend timestamp** are
+  stored locally in `orders.metadata` (`refunds[]`, `notes[]`, `returned` +
+  `return_type`, `confirmation_sent_at`) — no dedicated tables.
+- `payments.invoice_id` also exists as a direct column but is unreliable; the
+  canonical link is via `payment_results`.

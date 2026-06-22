@@ -93,6 +93,7 @@ class OrderService
                     'is_shipped' => (bool) $o->is_shipped,
                     'is_paid' => (bool) $o->is_paid,
                     'is_cancelled' => $o->is_cancelled,
+                    'returned' => (bool) data_get($o->metadata, 'returned', false),
                     'ref' => $o->ref,
                     'ref1' => $o->ref1,
                     'region_code' => $o->region_code,
@@ -169,6 +170,54 @@ class OrderService
 
         $order->metadata = $metadata;
         $order->reason = $data['reason'] ?? null;
+        $order->save();
+
+        return $order->fresh(['customer', 'product']);
+    }
+
+    /** Mark / unmark the order as returned (local metadata state). */
+    public function setReturn(int $id, string $action, array $data = []): Order
+    {
+        $order = $this->findRaw($id);
+        $metadata = $order->metadata ?? [];
+
+        if ($action === 'set') {
+            $metadata['returned'] = true;
+            $metadata['return_type'] = $data['type'] ?? null;
+            $metadata['returned_at'] = now()->toDateTimeString();
+        } else {
+            unset($metadata['returned'], $metadata['return_type'], $metadata['returned_at']);
+        }
+
+        $order->metadata = $metadata;
+        $order->save();
+
+        return $order->fresh(['customer', 'product']);
+    }
+
+    /** Append an internal note to the order (local metadata.notes[]). */
+    public function addNote(int $id, string $text): Order
+    {
+        $order = $this->findRaw($id);
+        $metadata = $order->metadata ?? [];
+        $notes = $metadata['notes'] ?? [];
+        $notes[] = ['text' => $text, 'created_at' => now()->toDateTimeString(), 'initiator' => null];
+        $metadata['notes'] = $notes;
+
+        $order->metadata = $metadata;
+        $order->save();
+
+        return $order->fresh(['customer', 'product']);
+    }
+
+    /** Resend the order confirmation email — stubbed (no mailer); records timestamp. */
+    public function resendConfirmation(int $id): Order
+    {
+        $order = $this->findRaw($id);
+        $metadata = $order->metadata ?? [];
+        $metadata['confirmation_sent_at'] = now()->toDateTimeString();
+
+        $order->metadata = $metadata;
         $order->save();
 
         return $order->fresh(['customer', 'product']);

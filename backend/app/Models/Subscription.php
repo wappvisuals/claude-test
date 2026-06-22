@@ -25,6 +25,7 @@ class Subscription extends Model
         'date_cancelled',
         'date_inactivated',
         'date_churned',
+        'final_invoice',
     ];
 
     protected $casts = [

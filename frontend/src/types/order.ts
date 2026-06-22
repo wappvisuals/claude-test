@@ -58,6 +58,11 @@ export interface Order {
   partner: string | null
   parcel_tracking_id: string | null
   reason: string | null
+  returned: boolean
+  return_type: string | null
+  notes: Array<{ text: string; created_at: string | null; initiator: number | null }>
+  refunds: Array<{ mode: string; amount: number; lines: Array<Record<string, unknown>>; reason: string | null; created_at: string | null }>
+  confirmation_sent_at: string | null
   metadata: Record<string, unknown> | null
   line_items?: OrderLineItem[]
   adjustments?: OrderAdjustment[]
@@ -77,6 +82,7 @@ export interface OrderGroupItem {
   is_shipped: boolean
   is_paid: boolean
   is_cancelled: boolean
+  returned: boolean
   ref: string | null
   ref1: string | null
   region_code: string | null

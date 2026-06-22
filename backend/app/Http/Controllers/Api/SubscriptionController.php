@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\EventLogResource;
 use App\Http\Resources\SubscriptionResource;
 use App\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use RuntimeException;
 
 class SubscriptionController extends Controller
@@ -51,6 +53,32 @@ class SubscriptionController extends Controller
         ]);
 
         return $this->run(fn () => new SubscriptionResource($this->service->deactivate($id, $validated)));
+    }
+
+    /** Reactivate a deactivated subscription. */
+    public function reactivate(int $id): JsonResponse
+    {
+        return $this->run(fn () => new SubscriptionResource($this->service->reactivate($id)));
+    }
+
+    /** Set / unset the final-invoice flag. */
+    public function finalInvoice(Request $request, int $id, string $action): JsonResponse
+    {
+        $validated = $request->validate([
+            'date' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        return $this->run(fn () => new SubscriptionResource($this->service->setFinalInvoice($id, $action, $validated)));
+    }
+
+    /** Subscription event log. */
+    public function eventLog(int $id): AnonymousResourceCollection|JsonResponse
+    {
+        try {
+            return EventLogResource::collection($this->service->eventLog($id));
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        }
     }
 
     private function run(callable $fn): JsonResponse

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\EventLog;
 use App\Models\ProductInternational;
 use App\Models\Subscription;
 use Illuminate\Support\Collection;
@@ -111,6 +112,7 @@ class SubscriptionService
             'reference' => $s->ref,
             'cancel_method' => $s->cancel_method,
             'cancel_reason' => $s->cancelReason->name ?? null,
+            'final_invoice' => $this->date($s->final_invoice),
             'is_pre_financed' => (bool) $s->is_pre_financed,
             'pre_finance_count' => (int) $s->pre_finance_count,
         ];
@@ -209,6 +211,48 @@ class SubscriptionService
         ]);
 
         return $subscription->fresh(['product', 'cancelReason']);
+    }
+
+    /** Reactivate a deactivated subscription (clears cancel state). */
+    public function reactivate(int $id): Subscription
+    {
+        $subscription = $this->find($id);
+        $subscription->update([
+            'active' => 1,
+            'cancel_method' => null,
+            'cancel_category' => null,
+            'cancel_reception' => null,
+            'cancel_reason' => null,
+            'date_cancelled' => null,
+            'date_churned' => null,
+            'date_inactivated' => null,
+        ]);
+
+        return $subscription->fresh(['product', 'cancelReason']);
+    }
+
+    /** Set or unset the final-invoice flag (date when set, null when unset). */
+    public function setFinalInvoice(int $id, string $action, array $data = []): Subscription
+    {
+        $subscription = $this->find($id);
+        $subscription->update([
+            'final_invoice' => $action === 'set' ? ($data['date'] ?? now()->toDateString()) : null,
+        ]);
+
+        return $subscription->fresh(['product', 'cancelReason']);
+    }
+
+    /** Subscription event trail (event_log by sub_id, newest first). */
+    public function eventLog(int $id): Collection
+    {
+        $this->find($id);
+
+        return EventLog::query()
+            ->where('sub_id', $id)
+            ->orderByDesc('date_added')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get();
     }
 
     private function find(int $id): Subscription

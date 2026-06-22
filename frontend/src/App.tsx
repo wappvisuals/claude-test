@@ -10,6 +10,7 @@ import { CustomerChangeLogPage } from './components/customers/CustomerChangeLogP
 import { OrderListPage } from './components/orders/OrderListPage'
 import { OrderViewPage } from './components/orders/OrderViewPage'
 import { SubscriptionViewPage } from './components/subscriptions/SubscriptionViewPage'
+import { InvoiceViewPage } from './components/invoices/InvoiceViewPage'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/orders" element={<OrderListPage />} />
           <Route path="/orders/:id" element={<OrderViewPage />} />
           <Route path="/subscriptions/:id" element={<SubscriptionViewPage />} />
+          <Route path="/invoices/:id" element={<InvoiceViewPage />} />
           <Route index element={<Navigate to="/customers" replace />} />
           <Route path="*" element={<Navigate to="/customers" replace />} />
         </Route>

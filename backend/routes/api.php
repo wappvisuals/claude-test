@@ -1,17 +1,20 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BlockedSsnController;
 use App\Http\Controllers\Api\CustomerChangeController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\CustomerOrganizationController;
 use App\Http\Controllers\Api\CustomerStoreStatsController;
+use App\Http\Controllers\Api\FutureOrderController;
 use App\Http\Controllers\Api\GdprCustomerController;
 use App\Http\Controllers\Api\InsurancePolicyController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\SinfridAccountController;
 use App\Http\Controllers\Api\SubscriptionController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/customers/search', [CustomerController::class, 'search']);
 
@@ -37,11 +40,34 @@ Route::get('/orders/{id}', [OrderController::class, 'show'])->where('id', '[0-9]
 Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel'])->where('id', '[0-9]+');
 Route::post('/orders/{id}/adjustments', [OrderController::class, 'addAdjustment'])->where('id', '[0-9]+');
 Route::delete('/orders/{id}/adjustments/{adjustmentId}', [OrderController::class, 'destroyAdjustment'])->where(['id' => '[0-9]+', 'adjustmentId' => '[0-9]+']);
+Route::post('/orders/{id}/refund', [OrderController::class, 'refund'])->where('id', '[0-9]+');
+Route::patch('/orders/{id}/return/{action}', [OrderController::class, 'setReturn'])->where(['id' => '[0-9]+', 'action' => 'set|unset']);
+Route::post('/orders/{id}/resend-confirmation', [OrderController::class, 'resendConfirmation'])->where('id', '[0-9]+');
+Route::post('/orders/{id}/notes', [OrderController::class, 'addNote'])->where('id', '[0-9]+');
+
+// Invoices & payments
+Route::get('/orders/{id}/invoices', [InvoiceController::class, 'indexForOrder'])->where('id', '[0-9]+');
+Route::get('/invoices/{id}', [InvoiceController::class, 'show'])->where('id', '[0-9]+');
+Route::post('/invoices/{id}/due-date', [InvoiceController::class, 'updateDueDate'])->where('id', '[0-9]+');
+Route::post('/invoices/{id}/payment-link', [InvoiceController::class, 'regeneratePaymentLink'])->where('id', '[0-9]+');
+Route::get('/invoices/{id}/reminders', [InvoiceController::class, 'reminders'])->where('id', '[0-9]+');
+Route::get('/invoices/{id}/payments', [PaymentController::class, 'indexForInvoice'])->where('id', '[0-9]+');
+Route::post('/invoices/{id}/payments', [PaymentController::class, 'store'])->where('id', '[0-9]+');
 
 // Subscriptions
 Route::get('/subscriptions/{id}', [SubscriptionController::class, 'show'])->where('id', '[0-9]+');
 Route::patch('/subscriptions/{id}', [SubscriptionController::class, 'update'])->where('id', '[0-9]+');
 Route::post('/subscriptions/{id}/deactivate', [SubscriptionController::class, 'deactivate'])->where('id', '[0-9]+');
+Route::post('/subscriptions/{id}/reactivate', [SubscriptionController::class, 'reactivate'])->where('id', '[0-9]+');
+Route::post('/subscriptions/{id}/final-invoice/{action}', [SubscriptionController::class, 'finalInvoice'])->where(['id' => '[0-9]+', 'action' => 'set|unset']);
+Route::get('/subscriptions/{id}/event-log', [SubscriptionController::class, 'eventLog'])->where('id', '[0-9]+');
+
+// Future orders
+Route::get('/subscriptions/{id}/future-orders', [FutureOrderController::class, 'indexForSubscription'])->where('id', '[0-9]+');
+Route::post('/subscriptions/{id}/future-orders/generate', [FutureOrderController::class, 'generate'])->where('id', '[0-9]+');
+Route::patch('/future-orders/{jobId}', [FutureOrderController::class, 'reschedule'])->where('jobId', '[0-9]+');
+Route::post('/future-orders/{jobId}/skip', [FutureOrderController::class, 'skip'])->where('jobId', '[0-9]+');
+Route::delete('/future-orders/{jobId}', [FutureOrderController::class, 'cancel'])->where('jobId', '[0-9]+');
 
 // Sinfrid account (account-scoped)
 Route::get('/sinfrid-account/plans', [SinfridAccountController::class, 'plans']);
